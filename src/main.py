@@ -42,7 +42,6 @@ def parse_com_line():
 
         (options, args) = optparser.parse_args()
 
-
     if args:
         args = vars(args)
     else:
@@ -51,36 +50,38 @@ def parse_com_line():
     return options, args
 
 
-def msa_reads(reads, reference, out_file):
-    """Uses s2f.py from ShoRAH to build MSA of the reads"""
-
-    import s2f
-    thresh = 0.8
-    s2f.main(reference, reads, out_file, thresh, pad_insert=False, keep_files=True)
+#def msa_reads(reads, reference, out_file):
+#    """Uses s2f.py from ShoRAH to build MSA of the reads"""
+#
+#    import s2f
+#    thresh = 0.8
+#    s2f.main(reference, reads, out_file, thresh, \
+#             pad_insert=False, keep_files=True)
 
 if __name__ == '__main__':
 
     import sys
     from Bio import SeqIO
+    import LValign
 
     OPTIONS, ARGS = parse_com_line()
 
     INFILE = ARGS['input']
     ref_file = ARGS['ref']
-    fasta_file = '.'.join(INFILE.split('.')[:-1])+'.fasta'
-    far_file = '.'.join(INFILE.split('.')[:-1])+'.far'
+    fasta_file = '.'.join(INFILE.split('.')[:-1]) + '.fasta'
+    fastq_file = '.'.join(INFILE.split('.')[:-1]) + '.fastq'
+    far_file = '.'.join(INFILE.split('.')[:-1]) + '.far'
 
     if INFILE.endswith('.sff'):
-        count = SeqIO.convert(INFILE, "sff", fasta_file, 'fasta')
-        print('Converted %d reads from sff to fasta' % count)
-        msa_reads(fasta_file, ref_file, far_file)
+        count = SeqIO.convert(INFILE, 'sff-trim', fastq_file, 'fastq')
+        print('Converted and trimmed %d reads from sff to fastq' % count)
+        LValign.main(fastq_file, ref_file, far_file)
     elif INFILE.endswith('.fasta'):
-        print('This is already fasta')
-        msa_reads(fasta_file, ref_file, far_file)
+        print('This is fasta, not converting')
+        LValign.main(fasta_file, ref_file, far_file)
     elif INFILE.endswith('.fastq'):
-        count = SeqIO.convert(INFILE, "fastq", fasta_file, 'fasta')
-        print('Converted %d reads from fastq to fasta' % count)
-        msa_reads(fasta_file, ref_file, far_file)
+        print('This is fastq, not converting')
+        LValign.main(fastq_file, ref_file, far_file)
     elif INFILE.endswith('-support.fas'):
         print('This is a support file')
     else:

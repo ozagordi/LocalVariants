@@ -1,0 +1,1 @@
+aligner = '/Users/ozagordi/Projects/3rd_party_SW/smalt-0.6.1/smalt_MacOSX_i686_64bit'
