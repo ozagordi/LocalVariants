@@ -1,17 +1,33 @@
 #!/usr/bin/env python
-
+'''This module parses support files, detects and list mutations
+    '''
 import sys
-import os.path
+import os
 import warnings
 
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import IUPAC
+from Bio import Entrez
 
-from Locals import gene_coord, dna_code
+from Locals import gene_coord
 
+MINIMUM_READ = 5.0
+
+# If HIV file is not there, fetch it
+Entrez.email = None  # To tell NCBI who you are
+filename = "HIV-HXB2.fasta"
+if not os.path.isfile(filename):
+    # Downloading...
+    handle = Entrez.efetch(db="nucleotide", id="1906382",
+                           rettype="fasta", retmode="text")
+    seq_record = SeqIO.read(handle, "fasta")
+    handle.close()
+    SeqIO.write(seq_record, filename, 'fasta')
+    print "Saved"
 HXB2 = list(SeqIO.parse('HIV-HXB2.fasta', 'fasta'))[0]
+HXB2.alphabet = IUPAC.ambiguous_dna
 
 translation_table = {  # 64 codons + '---'
     'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L', 'TCT': 'S',
@@ -74,71 +90,135 @@ def reframe(read, n_gaps):
 
 
 def gap_translation(seq_in, frame=1):
+    '''Biopython translation does not accept gaps
+        '''
     aa = []
     try:
         s = seq_in.tostring().upper()
-    except:
+    except AttributeError:
         s = seq_in.upper()
     for i in range(frame - 1, len(s), 3):
         try:
             aa.append(translation_table[s[i:i + 3]])
-        except:
+        except KeyError:
             break
     return ''.join(aa)
 
 
 def str_num_compare(x, y):
+    '''Used to sort mutations'''
     return int(x) - int(y)
 
 
+class Mutation:
+    '''Simple container for the mutation'''
+    def __init__(self, pos, wt, mut, comment=None):
+        self.mutated = mut  # mutatis (to)
+        self.original = wt  # mutandis (from)
+        self.position = pos
+        self.comment = comment
+
+    def __str__(self):
+        if self.original:
+            return '%s%d%s' % (self.original, self.position,
+                               self.mutated)
+        else:
+            return '%d%s' % (self.position, self.mutated)
+
+
+class LocalVariant(SeqRecord):
+    '''Built on SeqRecord, this adds a few useful attributes'''
+    def __init__(self, seq, seq_id, **kwargs):
+        SeqRecord.__init__(self, seq=seq, id=seq_id)
+        try:
+            self.frame = find_frame(seq)
+        except ValueError:
+            self.frame = None
+        self.frequency = None
+        self.mutations = []
+        for k, v in kwargs.items():
+            self.__dict__[k] = v
+
+    def get_mutations(self, r_seq):
+        '''Given the variant sequence and the reference,
+            aligns them and detects the mutations'''
+        import tempfile
+        import Alignment
+
+        outfile = tempfile.NamedTemporaryFile()
+        out_name = outfile.name
+        outfile.close()
+        r_str = r_seq.tostring()
+        Alignment.needle_align('asis:%s' % r_str,
+                               'asis:%s' % self.seq.tostring(),
+                               out_name, go=20.0, ge=0.1)
+        tal = Alignment.alignfile2dict([out_name],
+                                       'ref_mut_align', 20.0, 0.1)
+        os.remove(out_name)
+        ka = tal.keys()[0]
+        this = tal[ka]['asis']
+        # Extracts only the matching region and lists mutations
+        this.summary()
+        m_start, m_stop = this.start, this.stop
+        it_pair = zip(this.seq_a[m_start - 1:m_stop],
+                      this.seq_b[m_start - 1:m_stop])
+        mut_list = []
+        for i, p in enumerate(it_pair):
+            if p[0].upper() != p[1].upper():
+                mut_list.append(Mutation(i + m_start, p[0], p[1]))
+        self.mutations = mut_list
+
+
 class LocalStructure:
+    '''The main class here, takes the file, computes the consensus, the
+        frame, the offset and list the variants'''
+    def __init__(self, support_file, gene='protease'):
 
-    def __init__(self, sup_file, gene='protease'):
-        import os.path
-
-        self.sup_file = os.path.abspath(sup_file)
+        self.sup_file = os.path.abspath(support_file)
         s_head, self.name = os.path.split(self.sup_file)
-        #h = open(self.sup_file)
         self.seq_obj = SeqIO.parse(self.sup_file, 'fasta')
-        
         self.ref_obj = HXB2
         self.gene = gene
-        start, stop = gene_coord[self.gene]
-        self.ref = HXB2[start - 1:stop]
+        g_start, g_stop = gene_coord[self.gene]
+        self.ref = HXB2[g_start - 1:g_stop]
         self.cons = Seq(self.get_cons(), IUPAC.unambiguous_dna)
 
-        try:
-            self.frame = find_frame(self.cons)
-        except:
-            self.frame = 1
-        self.get_offset(HXB2)
+        # try:
+        self.frame = find_frame(self.cons)
+        # except:
+        # self.frame = 1
+        # self.get_offset(HXB2)
 
         sup_far = os.path.join(s_head, '-'.join(self.name.split('-')[:-1]) \
                                + '.far')
         ns = SeqIO.parse(open(sup_far), 'fasta')
         self.n_reads = len([s for s in ns])
-        self.dna_seqs = []
-        self.prot_seqs = []
+        self.dna_vars = []
+        self.prot_vars = []
 
     def alignedvariants(self, threshold=0.9):
+        '''Parses posterior, frequency, reframe large deletions,
+        replaces single deletions and merges identical sequences,
+        both at DNA and amino acids level. Returns a list of
+        LocalVariant objects.
+        '''
         import re
-        import itertools
         import tempfile
         import numpy as np
 
-        files = []
         var_dict = {}
         aa_var_dict = {}
         for i, s in enumerate(self.seq_obj):
             m_obj = re.search('posterior=(.*)\s*ave_reads=(.*)', s.description)
             post, ave_reads = map(float, (m_obj.group(1), m_obj.group(2)))
-            if post < threshold or ave_reads < 1.:
+            if post < threshold or ave_reads < MINIMUM_READ:
                 continue
             if post > 1.0:
                 print >> sys.stderr, 'WARNING: posterior=', post
 
             # reframe large deletions
-            read = s.seq.tostring()[self.frame - 1:]  # frame is 1-based numbered
+            # frame is 1-based numbered
+            read = s.seq.tostring()[self.frame - 1:]
             max_len = len(read.strip('-')) / 3 * 3
             for i in range(max_len, -1, -3):
                 gap_region = '-' * i
@@ -148,7 +228,8 @@ class LocalStructure:
                     break
 
             # replaces single gaps with consensus
-            this_seq = (p[1] if p[1] is not '-' else p[0] for p in zip(self.cons, read))
+            this_seq = (p[1] if p[1] is not '-' else p[0] \
+                        for p in zip(self.cons, read))
             ws = ''.join(this_seq)
             ws = ws.replace('X', '-')
             ws_aa = gap_translation(ws)
@@ -157,32 +238,32 @@ class LocalStructure:
 
         i = 1
         for k, v in var_dict.items():
-            ts = Seq(k, IUPAC.unambiguous_dna)
-            tsr = SeqRecord(ts, id='reconstructed_hap_%d' % i, \
-                            name='Reconstructed local hap')
             freq_here = 100 * v / self.n_reads
-            tsr.description = 'ave_freq=%f' % freq_here
-            self.dna_seqs.append(tsr)
+            tsr = LocalVariant(Seq(k, IUPAC.unambiguous_dna),
+                               seq_id='reconstructed_hap_%d' % i,
+                               description='Local hap freq=%f' % freq_here,
+                               frequency=freq_here)
+            self.dna_vars.append(tsr)
             i += 1
 
+        i = 1
         for k, v in aa_var_dict.items():
-            ts_translated = Seq(k, IUPAC.protein)
-            trans_read = SeqRecord(ts_translated, \
-                                   id='ppp')#hashlib.sha224(k).hexdigest()
-            #name='Translated local hap')
             freq_here = 100 * v / self.n_reads
-            trans_read.description = 'ave_freq=%f' % freq_here
-            self.prot_seqs.append(trans_read)
+            trans_read = LocalVariant(Seq(k, IUPAC.protein), \
+                                seq_id='translated_reconstructed_hap_%d' % i,
+                                description='Local amino hap freq=%f' \
+                                % freq_here,
+                                frequency=freq_here)
+            self.prot_vars.append(trans_read)
+            i += 1
 
         # sort according to freq
-        dna_freqs = [float(s.description.split('=')[1]) for s in self.dna_seqs]
-        aa_freqs = [float(s.description.split('=')[1]) for s in self.prot_seqs]
+        dna_freqs = [s.frequency for s in self.dna_vars]
+        aa_freqs = [s.frequency for s in self.prot_vars]
         dna_argsort = np.argsort(dna_freqs)[::-1]
         aa_argsort = np.argsort(aa_freqs)[::-1]
-        tmp = [self.dna_seqs[i] for i in dna_argsort]
-        self.dna_seqs = tmp
-        tmp = [self.prot_seqs[i] for i in aa_argsort]
-        self.prot_seqs = tmp
+        self.dna_vars = [self.dna_vars[i] for i in dna_argsort]
+        self.prot_vars = [self.prot_vars[i] for i in aa_argsort]
 
         # When run in Xcode, working directory is root
         wd = os.getcwd()
@@ -190,16 +271,52 @@ class LocalStructure:
             wd = tempfile.gettempdir()
             print >> sys.stderr, 'Writing to directory', wd
 
-        SeqIO.write(self.dna_seqs, wd + '/dna_seqs.fasta', 'fasta')
-        SeqIO.write(self.prot_seqs, wd + '/prot_seqs.fasta', 'fasta')
+        SeqIO.write(self.dna_vars, wd + '/dna_seqs.fasta', 'fasta')
+        SeqIO.write(self.prot_vars, wd + '/prot_seqs.fasta', 'fasta')
 
-        return self.dna_seqs
+    def print_mutations(self, rm_seq, seq_type='DNA',
+                        out_format='csv', out_file=sys.stdout):
+        '''As the name says
+            '''
+
+        from operator import itemgetter
+        if out_format == 'csv':
+            import csv
+            fh = open(out_file, 'wb')
+            writer = csv.writer(fh, dialect='excel')
+
+        if seq_type == 'aa':
+            to_print = self.prot_vars
+        else:
+            to_print = self.dna_vars
+
+        all_mut = set([])
+        for v in to_print:
+            v.get_mutations(rm_seq)
+            for m in v.mutations:
+                all_mut.add(str(m))
+        all_mut = sorted(list(all_mut), key=itemgetter(slice(1, -1)),
+                         cmp=str_num_compare)
+        all_mut.insert(0, 'freq\\mut')
+
+        if out_format == 'csv':
+            writer.writerow(all_mut)
+        elif out_format == 'human':
+            print '\t'.join(all_mut)
+
+        for v in to_print:
+            mut_str = [str(m) for m in v.mutations]
+            row = ['X' if put in mut_str else ' ' for put in all_mut[1:]]
+            row.insert(0, round(v.frequency, 1))
+            if out_format == 'csv':
+                writer.writerow(row)
+            elif out_format == 'human':
+                print '\t'.join(map(str, row))
 
     def get_cons(self, plurality=0.1, identity=1):
         '''Consensus by running EMBOSS cons and manipulation
         '''
         import subprocess
-        import os
         import itertools
         import tempfile
         import Alignment
@@ -208,8 +325,8 @@ class LocalStructure:
         cline = 'cons -sequence %s -stdout -auto' % self.sup_file
         cline += ' -plurality %f -identity %i -name consensus' % \
                     (plurality, identity)
-        p = subprocess.Popen(cline, shell=True, bufsize=1024, \
-                             stdin=subprocess.PIPE, stdout=subprocess.PIPE, \
+        p = subprocess.Popen(cline, shell=True, bufsize=1024,
+                             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                              close_fds=True)
         sc = list(SeqIO.parse(p.stdout, 'fasta'))[0].seq.tostring().upper()
         strcons = sc  # .replace('N', '')
@@ -217,9 +334,10 @@ class LocalStructure:
         outfile = tempfile.NamedTemporaryFile()
         out_name = outfile.name
         outfile.close()
-        Alignment.needle_align('asis:%s' % self.ref.seq.tostring(), 'asis:%s' % strcons, \
+        Alignment.needle_align('asis:%s' % self.ref.seq.tostring(),
+                               'asis:%s' % strcons,
                                out_name, go=20.0, ge=0.1)
-        tal = Alignment.alignfile2dict([out_name], \
+        tal = Alignment.alignfile2dict([out_name],
                                        'ref_cons_alignment', 20.0, 0.1)
         os.remove(out_name)
         ka = tal.keys()[0]
@@ -228,7 +346,7 @@ class LocalStructure:
         this.summary()
         start, stop = this.start, this.stop
         # ref_file, consensus
-        it_pair = itertools.izip(this.seq_a[start - 1:stop], \
+        it_pair = itertools.izip(this.seq_a[start - 1:stop],
                                  this.seq_b[start - 1:stop])
         this_seq = []
         while True:
@@ -245,186 +363,9 @@ class LocalStructure:
                 this_seq.append(p[1])
         return ''.join(this_seq)
 
-    def mytranslate(self):
-        '''
-            '''
-        import re
-        import hashlib
-        from Bio.Seq import translate
-
-        prot_dict = {}
-        minstop = 10000
-        for fr in range(3):
-            s1 = self.dna_seqs[1].seq[fr:].translate()
-            if minstop >= s1.count('*'):
-                self.frame = fr
-                minstop = s1.count('*')
-
-    #print('Frame is', self.frame + 1, file=sys.stderr)
-
-        for s in self.dna_seqs:
-            cod = Seq(s.seq[self.frame:].tostring())
-            # aas = translate(cod).tostring()
-            aas = gap_translation(cod)
-            ave_reads = re.search('ave_reads=(.*)', s.description).group(1)
-            prot_dict[aas] = prot_dict.get(aas, 0) + float(ave_reads)
-
-        for k, v in prot_dict.items():
-            ts = Seq(k, IUPAC.protein)
-            tsr = SeqRecord(ts, id=hashlib.sha224(k).hexdigest(), \
-                            name='Reconstructed local hap: translated')
-            tsr.description = 'ave_reads=%f' % v
-            self.prot_seqs.append(tsr)
-        return self.prot_seqs
-
-    def mutations(self, wh='DNA', out_format='csv', out_file=sys.stdout):
-        '''
-            '''
-        from operator import itemgetter
-
-        if wh == 'DNA':
-            seqs = self.dna_seqs
-        elif wh == 'aa':
-            seqs = self.prot_seqs
-
-        #print('#' * 60, file=sys.stderr)
-        #print(str(' Now %s variants ' % wh).center(60, '#'), file=sys.stderr)
-        #print('#' * 60, file=sys.stderr)
-        dna_offset = self.offset
-        aa_offset = (self.offset + 1) / 3
-        #if wh == 'DNA':
-        #print('DNA offset is', dna_offset, file=sys.stderr)
-        #elif wh == 'aa':
-        #print('aa offset is', aa_offset, file=sys.stderr)
-        all_mut = []
-        mut_info = []
-        # ref_cons_mut = []
-
-        trans_ref = self.ref[0:300].seq.translate()  # [aa_offset:]
-        print >> sys.stderr, 'Translated reference is:'
-        print >> sys.stderr, trans_ref, '\n'
-
-        # test position numbering
-
-        # parse the mutation in the haplotypes
-        topr = True
-        for s in seqs:
-            mut = []
-            # frequencies are already in percentage
-            # if lower than 0.5%, do not consider them
-            freq_here = float(s.description.split('=')[1])
-            if freq_here < 0.5:
-                continue
-            if wh == 'DNA':
-                for i, p in enumerate(zip(\
-                        self.ref[dna_offset - 1:dna_offset + len(s) - 1], s)):
-                    if dna_code[p[0].upper()] & dna_code[p[1].upper()] == \
-                            set([]):
-                        this_mut = '%s%d%s' % \
-                            (p[0].upper(), i + dna_offset + 1, p[1].upper())
-                        if this_mut not in all_mut:
-                            all_mut.append(this_mut)
-                        mut.append(this_mut)
-            if wh == 'aa':
-#                if topr:
-#                    print('This is to chech that reference matches query',
-#                          file=sys.stderr)
-#                    print(trans_ref[:10], file=sys.stderr)
-#                    print(s[:10].seq, file=sys.stderr)
-#                    print('', file=sys.stderr)
-#                    topr = False
-                for i, p in enumerate(zip(trans_ref, s)):
-                    if p[0].upper() != p[1].upper():
-                        this_mut = '%s%d%s' % \
-                            (p[0].upper(), i + 1 + aa_offset, p[1].upper())
-                        if this_mut not in all_mut:
-                            all_mut.append(this_mut)
-                        mut.append(this_mut)
-            mut_info.append([s.name, float(s.description.split('=')[1]), mut])
-
-        mut_info = sorted(mut_info, key=itemgetter(1), reverse=True)
-        all_mut = sorted(all_mut, key=itemgetter(slice(1, -1)), \
-                         cmp=str_num_compare)
-        tr_reads = sum([m[1] for m in mut_info])
-        print >> sys.stderr, 'Haps account for %3.1f %% of the reads\n' % tr_reads
-        # print('That is %f%% of the total\n' % (100 * tr_reads/self.n_reads),
-        # file=sys.stderr)
-
-        if out_format == 'human':
-            for m in mut_info:
-                print >> sys.stderr, m[0], 'ave_reads = %6.2f%%' % (100 * m[1] / tr_reads)
-
-                for mm in m[2]:
-                    print >> sys.stderr, mm
-                print >> sys.stderr, '\n'
-
-        elif out_format == 'csv':
-            import csv
-            fh = open(out_file, 'wb')
-            # writer = csv.writer(fh, delimiter=',', quotechar='|',
-            # quoting=csv.QUOTE_MINIMAL)
-            writer = csv.writer(fh, dialect='excel')
-            #delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            writer.writerow(['freq\\muts'] + all_mut)
-            for m in mut_info:
-                freq_here = m[1]  # (100 * m[1]/tr_reads)
-                to_write = [('%4.2f' % freq_here)]
-                for mm in all_mut:
-                    if mm in m[2]:
-                        to_write.append('X')
-                    else:
-                        to_write.append(' ')
-                writer.writerow(to_write)
-
-        elif out_format == 'tex':
-            out_file.write('\\begin{sidewaystable}\n')
-            out_file.write('\\centering\n')
-            out_file.write('\\rowcolors{1}{Apricot}{cyan}\n')
-            out_file.write('\\begin{tabular}{c*{%d}{|c}}\n' % len(all_mut))
-            out_file.write('\\%& ')
-            out_file.write(' &'.join(all_mut))
-            out_file.write('\\\\\n')
-            for m in mut_info:
-                to_write = [('%4.2f' % (100 * m[1] / tr_reads))]
-                for mm in all_mut:
-                    if mm in m[2]:
-                        to_write.append('X')
-                    else:
-                        to_write.append(' ')
-                out_file.write(' &'.join(to_write))
-                out_file.write('\\\\\n')
-            out_file.write('\\end{tabular}\n')
-            out_file.write(
-                           '\\caption{Patient PR: haplotypes account for %f \
-                           \\%% of the reads.}\n'
-                           % (100 * tr_reads / self.n_reads))
-            out_file.write('\\end{sidewaystable}\n')
-
-        return tr_reads, 100 * tr_reads / self.n_reads
-
-    def get_offset(self, ref_seq):
-        import Alignment
-        import os
-        import tempfile
-
-        outfile = tempfile.NamedTemporaryFile()
-        out_name = outfile.name
-        outfile.close()
-        start, stop = gene_coord[self.gene]
-        ref_str = ref_seq[start:stop].seq.tostring()
-        Alignment.needle_align('asis:%s' % ref_str, 'asis:%s' % self.cons, \
-                               out_name, go=10.0, ge=0.5)
-        tal = Alignment.alignfile2dict([out_name], 'get_offset', 10.0, 0.5)
-        os.remove(out_name)
-        ka = tal.keys()[0]
-        this = tal[ka]['asis']
-        this.summary()
-        self.offset = this.start
-        print >> sys.stderr, 'Offset is', self.offset
-        return
-
 
 def parse_com_line():
+    '''Only tries optparse (deprecated in 2.7, in future add argparse'''
     import optparse
 
     optparser = optparse.OptionParser()
@@ -434,21 +375,20 @@ def parse_com_line():
     optparser.add_option("-g", "--gene", type="string", default="protease",
                          help="gene name", dest="gene")
 
-    (options, args) = optparser.parse_args()
+    (opts, args) = optparser.parse_args()
 
-    return options, args
+    return opts, args
 
 if __name__ == '__main__':
 
-    options, args = parse_com_line()
+    options, arguments = parse_com_line()
     sup_file = options.support
     gene_name = options.gene
-    print sup_file, gene_name
+    print 'Support is', sup_file, '\tGene is', gene_name
     sample_ls = LocalStructure(sup_file=sup_file, gene=gene_name)
+    r_start, r_stop = gene_coord[gene_name]
+    ref_seq = HXB2[r_start - 1:r_stop].seq.translate()
 
-    vd = sample_ls.alignedvariants(threshold=0.95)
-    print >> sys.stderr, 'There are ', len(vd), ' DNA variants'
-    sample_ls.mutations(wh='DNA', out_format='csv', 
-                        out_file='mutations_DNA.csv')
-    # sample_ls.mutations(wh='aa', out_format='csv',
-    # out_file='mutations_aa.csv')
+    sample_ls.alignedvariants(threshold=0.95)
+    sample_ls.print_mutations(ref_seq, seq_type='aa',
+                              out_format='csv', out_file='ppp.csv')

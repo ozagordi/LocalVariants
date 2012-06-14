@@ -122,8 +122,10 @@ def bam2fasta(samfile, **kwargs):
                     for read in samfile.fetch(chrom, start, stop)}
     max_ins_per_pos = {}
     for i in range(start, stop):
-        mx = max([v[i] if i in v.keys() else 0 for k, v in ins_per_read.items()])
-        if mx: max_ins_per_pos[i] = mx
+        mx = max([v[i] if i in v.keys() else 0 \
+                  for k, v in ins_per_read.items()])
+        if mx:
+            max_ins_per_pos[i] = mx
 
     print ins_per_read, max_ins_per_pos
     records = []
