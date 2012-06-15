@@ -17,7 +17,9 @@ MINIMUM_READ = 5.0
 
 # If HIV file is not there, fetch it
 Entrez.email = None  # To tell NCBI who you are
-filename = "HIV-HXB2.fasta"
+mod_dir = os.path.split(__file__)[0]
+filename = os.path.join(mod_dir, "HIV-HXB2.fasta")
+print filename
 if not os.path.isfile(filename):
     # Downloading...
     handle = Entrez.efetch(db="nucleotide", id="1906382",
@@ -26,7 +28,7 @@ if not os.path.isfile(filename):
     handle.close()
     SeqIO.write(seq_record, filename, 'fasta')
     print "Saved"
-HXB2 = list(SeqIO.parse('HIV-HXB2.fasta', 'fasta'))[0]
+HXB2 = list(SeqIO.parse(filename, 'fasta'))[0]
 HXB2.alphabet = IUPAC.ambiguous_dna
 
 translation_table = {  # 64 codons + '---'
@@ -49,7 +51,11 @@ def find_frame(read):
     '''Frame is the one with the smallest number of stop codons
     '''
     from Bio.Seq import translate
-    counts = [(translate(read[f:]).count('*'), f + 1) for f in range(3)]
+    import Bio
+    try:
+        counts = [(translate(read[f:]).count('*'), f + 1) for f in range(3)]
+    except Bio.Data.CodonTable.TranslationError:
+        counts = [(gap_translation(read[f:]).count('*'), f + 1) for f in range(3)]
     sor_cnt = sorted(counts)
     stop_codons, frame = sor_cnt[0]
     if stop_codons > 0:
@@ -384,11 +390,15 @@ if __name__ == '__main__':
     options, arguments = parse_com_line()
     sup_file = options.support
     gene_name = options.gene
-    print 'Support is', sup_file, '\tGene is', gene_name
-    sample_ls = LocalStructure(sup_file=sup_file, gene=gene_name)
+    print 'Support is', sup_file, ' Gene is', gene_name
+    sample_ls = LocalStructure(support_file=sup_file, gene=gene_name)
     r_start, r_stop = gene_coord[gene_name]
-    ref_seq = HXB2[r_start - 1:r_stop].seq.translate()
+    ref_seq = HXB2[r_start - 1:r_stop].seq
+    ref_seq_aa = HXB2[r_start - 1:r_stop].seq.translate()
 
     sample_ls.alignedvariants(threshold=0.95)
-    sample_ls.print_mutations(ref_seq, seq_type='aa',
-                              out_format='csv', out_file='ppp.csv')
+    sample_ls.print_mutations(ref_seq, seq_type='DNA', out_format='csv',
+                              out_file='mutations_DNA.csv')
+
+    sample_ls.print_mutations(ref_seq_aa, seq_type='aa',
+                              out_format='csv', out_file='mutations_aa.csv')
