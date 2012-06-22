@@ -55,7 +55,8 @@ def find_frame(read):
     try:
         counts = [(translate(read[f:]).count('*'), f + 1) for f in range(3)]
     except Bio.Data.CodonTable.TranslationError:
-        counts = [(gap_translation(read[f:]).count('*'), f + 1) for f in range(3)]
+        counts = [(gap_translation(read[f:]).count('*'), f + 1) \
+                  for f in range(3)]
     sor_cnt = sorted(counts)
     stop_codons, frame = sor_cnt[0]
     if stop_codons > 0:
@@ -243,8 +244,9 @@ class LocalStructure:
             aa_var_dict[ws_aa] = aa_var_dict.get(ws_aa, 0) + ave_reads
 
         i = 1
+        tot_freq = sum(var_dict.values())
         for k, v in var_dict.items():
-            freq_here = 100 * v / self.n_reads
+            freq_here = 100 * v / tot_freq
             tsr = LocalVariant(Seq(k, IUPAC.unambiguous_dna),
                                seq_id='reconstructed_hap_%d' % i,
                                description='Local hap freq=%f' % freq_here,
@@ -253,8 +255,9 @@ class LocalStructure:
             i += 1
 
         i = 1
+        tot_freq = sum(aa_var_dict.values())
         for k, v in aa_var_dict.items():
-            freq_here = 100 * v / self.n_reads
+            freq_here = 100 * v / tot_freq
             trans_read = LocalVariant(Seq(k, IUPAC.protein), \
                                 seq_id='translated_reconstructed_hap_%d' % i,
                                 description='Local amino hap freq=%f' \
