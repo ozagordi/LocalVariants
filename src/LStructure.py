@@ -11,25 +11,30 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import IUPAC
 from Bio import Entrez
 
-from Locals import gene_coord
+from Locals import HIV_gene_coord, HCV_gene_coord
 
 MINIMUM_READ = 5.0
 
 # If HIV file is not there, fetch it
 Entrez.email = None  # To tell NCBI who you are
 mod_dir = os.path.split(__file__)[0]
-filename = os.path.join(mod_dir, "HIV-HXB2.fasta")
-print filename
-if not os.path.isfile(filename):
+hiv_filename = os.path.join(mod_dir, "HIV-HXB2.fasta")
+print hiv_filename
+if not os.path.isfile(hiv_filename):
     # Downloading...
     handle = Entrez.efetch(db="nucleotide", id="1906382",
                            rettype="fasta", retmode="text")
     seq_record = SeqIO.read(handle, "fasta")
     handle.close()
-    SeqIO.write(seq_record, filename, 'fasta')
+    SeqIO.write(seq_record, hiv_filename, 'fasta')
     print "Saved"
-HXB2 = list(SeqIO.parse(filename, 'fasta'))[0]
+HXB2 = list(SeqIO.parse(hiv_filename, 'fasta'))[0]
 HXB2.alphabet = IUPAC.ambiguous_dna
+
+hcv_filename = os.path.join(mod_dir, "HCV1.fasta")
+HCV = list(SeqIO.parse(hcv_filename, 'fasta'))[0]
+HCV.alphabet = IUPAC.ambiguous_dna
+
 
 translation_table = {  # 64 codons + '---'
     'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L', 'TCT': 'S',
@@ -179,15 +184,15 @@ class LocalVariant(SeqRecord):
 class LocalStructure:
     '''The main class here, takes the file, computes the consensus, the
         frame, the offset and list the variants'''
-    def __init__(self, support_file, gene='protease'):
+    def __init__(self, support_file, ref):
 
         self.sup_file = os.path.abspath(support_file)
         s_head, self.name = os.path.split(self.sup_file)
         self.seq_obj = SeqIO.parse(self.sup_file, 'fasta')
-        self.ref_obj = HXB2
-        self.gene = gene
-        g_start, g_stop = gene_coord[self.gene]
-        self.ref = HXB2[g_start - 1:g_stop]
+        #   self.ref_obj = HXB2
+        #   self.gene = gene
+        #   g_start, g_stop = gene_coord[self.gene]
+        self.ref = ref  # HXB2[g_start - 1:g_stop]
         self.cons = Seq(self.get_cons(), IUPAC.unambiguous_dna)
 
         # try:
@@ -245,6 +250,7 @@ class LocalStructure:
 
         i = 1
         tot_freq = sum(var_dict.values())
+        print >> sys.stderr, 'Total reads:', tot_freq
         for k, v in var_dict.items():
             freq_here = 100 * v / tot_freq
             tsr = LocalVariant(Seq(k, IUPAC.unambiguous_dna),
@@ -343,7 +349,7 @@ class LocalStructure:
         outfile = tempfile.NamedTemporaryFile()
         out_name = outfile.name
         outfile.close()
-        Alignment.needle_align('asis:%s' % self.ref.seq.tostring(),
+        Alignment.needle_align('asis:%s' % self.ref.tostring(),
                                'asis:%s' % strcons,
                                out_name, go=20.0, ge=0.1)
         tal = Alignment.alignfile2dict([out_name],
@@ -374,30 +380,56 @@ class LocalStructure:
 
 
 def parse_com_line():
-    '''Only tries optparse (deprecated in 2.7, in future add argparse'''
+    '''Only tries optparse (deprecated in 2.7, in future add argparse)'''
     import optparse
 
-    optparser = optparse.OptionParser()
+    usage = "usage: %prog -s support_file [options]"
+    optparser = optparse.OptionParser(usage=usage)
 
     optparser.add_option("-s", "--support", type="string", default="",
                          help="support file", dest="support")
     optparser.add_option("-g", "--gene", type="string", default="protease",
                          help="gene name", dest="gene")
+    optparser.add_option("-o", "--organism", type="string",
+                         help="organism: HIV, HCV", dest="organism")
+    optparser.add_option("-r", "--reference", type="string", default="",
+                         help="fasta file with reference", dest="reference")
 
+    (opts, args) = optparser.parse_args()
+    if not opts.support:
+        optparser.error("specifying support file is mandatory")
+    if opts.reference and opts.organism:
+        optparser.error("options -r and -o are mutually exclusive")
+
+    optparser.set_defaults(organism="HIV")
     (opts, args) = optparser.parse_args()
 
     return opts, args
+
 
 if __name__ == '__main__':
 
     options, arguments = parse_com_line()
     sup_file = options.support
-    gene_name = options.gene
-    print 'Support is', sup_file, ' Gene is', gene_name
-    sample_ls = LocalStructure(support_file=sup_file, gene=gene_name)
-    r_start, r_stop = gene_coord[gene_name]
-    ref_seq = HXB2[r_start - 1:r_stop].seq
-    ref_seq_aa = HXB2[r_start - 1:r_stop].seq.translate()
+    print 'Support is', sup_file
+
+    if options.reference:
+        ref_rec = list(SeqIO.parse(options.reference, 'fasta'))[0]
+        ref_seq = ref_rec.seq
+        ref_seq_aa = ref_seq.translate()
+        print >> sys.stderr, 'Reference is %s from file' % ref_rec.id
+    elif options.organism == 'HIV':
+        r_start, r_stop = HIV_gene_coord[options.gene]
+        ref_seq = HXB2[r_start - 1:r_stop].seq
+        ref_seq_aa = ref_seq.translate()
+    elif options.organism == 'HCV':
+        r_start, r_stop = HCV_gene_coord[options.gene]
+        ref_seq = HCV[r_start - 1:r_stop].seq
+        ref_seq_aa = ref_seq.translate()
+    print >> sys.stderr, 'Reference is %s from %s' % \
+                            (options.gene, options.organism)
+
+    sample_ls = LocalStructure(support_file=sup_file, ref=ref_seq)
 
     sample_ls.alignedvariants(threshold=0.95)
     sample_ls.print_mutations(ref_seq, seq_type='DNA', out_format='csv',

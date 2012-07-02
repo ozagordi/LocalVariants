@@ -1,12 +1,19 @@
 aligner =\
     '/Users/ozagordi/Projects/3rd_party_SW/smalt-0.6.1/smalt_MacOSX_i686_64bit'
 
-gene_coord = {
+HIV_gene_coord = {
     # gene(lowercase): [start, stop]
     'pol': [2085, 5096],
     'protease': [2253, 2549],
     'env': [6225, 8795],
     'rt': [2550, 3869]
+}
+
+HCV_gene_coord = {
+    'C': [342, 914],
+    'E1': [915, 1490],
+    'E2': [1491, 2579],
+    'E1E2': [915, 2579]
 }
 
 dna_code = {'A': set(['A']),
