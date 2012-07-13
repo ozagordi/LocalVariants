@@ -185,13 +185,23 @@ class LocalStructure:
     '''The main class here, takes the file, computes the consensus, the
         frame, the offset and list the variants'''
     def __init__(self, support_file, ref):
+        import re
 
         self.sup_file = os.path.abspath(support_file)
         s_head, self.name = os.path.split(self.sup_file)
-        self.seq_obj = SeqIO.parse(self.sup_file, 'fasta')
+
+        descriptions = [s.description \
+                        for s in SeqIO.parse(self.sup_file, 'fasta')]
+        self.posteriors = \
+            [float(re.search('posterior=(.*)\s*ave_reads=(.*)', d).group(1))
+                for d in descriptions]
+        self.ave_reads = \
+            [float(re.search('posterior=(.*)\s*ave_reads=(.*)', d).group(2))
+                for d in descriptions]
         #   self.ref_obj = HXB2
         #   self.gene = gene
         #   g_start, g_stop = gene_coord[self.gene]
+        self.seq_obj = SeqIO.parse(self.sup_file, 'fasta')
         self.ref = ref  # HXB2[g_start - 1:g_stop]
         self.cons = Seq(self.get_cons(), IUPAC.unambiguous_dna)
 
@@ -214,15 +224,13 @@ class LocalStructure:
         both at DNA and amino acids level. Returns a list of
         LocalVariant objects.
         '''
-        import re
         import tempfile
         import numpy as np
 
         var_dict = {}
         aa_var_dict = {}
         for i, s in enumerate(self.seq_obj):
-            m_obj = re.search('posterior=(.*)\s*ave_reads=(.*)', s.description)
-            post, ave_reads = map(float, (m_obj.group(1), m_obj.group(2)))
+            post, ave_reads = self.posteriors[i], self.ave_reads[i]
             if post < threshold or ave_reads < MINIMUM_READ:
                 continue
             if post > 1.0:
@@ -241,7 +249,7 @@ class LocalStructure:
 
             # replaces single gaps with consensus
             this_seq = (p[1] if p[1] is not '-' else p[0] \
-                        for p in zip(self.cons, read))
+                        for p in zip(self.cons[self.frame - 1:], read))
             ws = ''.join(this_seq)
             ws = ws.replace('X', '-')
             ws_aa = gap_translation(ws)
@@ -328,23 +336,24 @@ class LocalStructure:
             elif out_format == 'human':
                 print '\t'.join(map(str, row))
 
-    def get_cons(self, plurality=0.1, identity=1):
-        '''Consensus by running EMBOSS cons and manipulation
+    def get_cons(self):
+        '''Consensus by weighting the support with frequencies
         '''
-        import subprocess
-        import itertools
         import tempfile
+        from itertools import izip
+        from collections import Counter
         import Alignment
+        from Bio import AlignIO
 
-        # Compute the consensus with EMBOSS cons
-        cline = 'cons -sequence %s -stdout -auto' % self.sup_file
-        cline += ' -plurality %f -identity %i -name consensus' % \
-                    (plurality, identity)
-        p = subprocess.Popen(cline, shell=True, bufsize=1024,
-                             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                             close_fds=True)
-        sc = list(SeqIO.parse(p.stdout, 'fasta'))[0].seq.tostring().upper()
-        strcons = sc  # .replace('N', '')
+        alignment = AlignIO.read(self.sup_file, 'fasta')
+        sc = []
+        for i in range(len(alignment[0])):
+            bases = alignment[:, i]
+            c = Counter()
+            for i, b in enumerate(bases):
+                c[b] += int(round(self.posteriors[i] * self.ave_reads[i]))
+            sc.append(c.most_common()[0][0].upper())
+        strcons = ''.join(sc)
         # Align the consensus to reference sequence
         outfile = tempfile.NamedTemporaryFile()
         out_name = outfile.name
@@ -361,8 +370,8 @@ class LocalStructure:
         this.summary()
         start, stop = this.start, this.stop
         # ref_file, consensus
-        it_pair = itertools.izip(this.seq_a[start - 1:stop],
-                                 this.seq_b[start - 1:stop])
+        it_pair = izip(this.seq_a[start - 1:stop],
+                       this.seq_b[start - 1:stop])
         this_seq = []
         while True:
             try:
