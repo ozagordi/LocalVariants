@@ -9,6 +9,10 @@ src/*.pyc
 ####
 # binary
 
+####
+# test directory
+test/
+
 #####
 # OS X temporary files that should never be committed
 

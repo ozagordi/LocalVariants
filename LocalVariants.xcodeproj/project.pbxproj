@@ -6,10 +6,15 @@
 	objectVersion = 46;
 	objects = {
 
+/* Begin PBXFileReference section */
+		6CDE65DF15580DE600D5DBAC /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; path = src; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
 /* Begin PBXGroup section */
 		6CDE65CF15580A9800D5DBAC = {
 			isa = PBXGroup;
 			children = (
+				6CDE65DF15580DE600D5DBAC /* src */,
 			);
 			sourceTree = "<group>";
 		};
@@ -35,7 +40,7 @@
 		6CDE65D115580A9800D5DBAC /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0430;
+				LastUpgradeCheck = 0450;
 			};
 			buildConfigurationList = 6CDE65D415580A9800D5DBAC /* Build configuration list for PBXProject "LocalVariants" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -102,6 +107,7 @@
 		6CDE65DA15580A9800D5DBAC /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				DEBUGGING_SYMBOLS = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -114,6 +120,7 @@
 		6CDE65DB15580A9800D5DBAC /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -139,6 +146,7 @@
 				6CDE65DB15580A9800D5DBAC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
