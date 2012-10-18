@@ -16,7 +16,8 @@ HCV_gene_coord = {
     'E1E2': [915, 2579]
 }
 
-dna_code = {'A': set(['A']),
+dna_code = {
+    'A': set(['A']),
     'C': set(['C']),
     'G': set(['G']),
     'T': set(['T']),

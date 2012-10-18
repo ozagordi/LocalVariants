@@ -3,6 +3,7 @@
     '''
 import unittest
 import os
+from Bio import SeqIO
 import LStructure as LS
 
 
@@ -57,18 +58,22 @@ class TestLocalStructure(unittest.TestCase):
             far_file.write('>read\nCAAAA\n')
         far_file.close()
 
-        test_sample = LS.LocalStructure(sup_file=sup_file.name)
+        ref_seq = list(SeqIO.parse('HIV-HXB2.fasta', 'fasta'))[0].seq
+
+        test_sample = LS.LocalStructure(support_file=sup_file.name,
+                                        ref=ref_seq)
 
         start_cons = 'GTCACTCTTTGGCAACGACCC'
         assert test_sample.cons.tostring().upper().startswith(start_cons), \
-                    test_sample.cons
+            test_sample.cons
         assert test_sample.n_reads == sum(reads)
-        for s in test_sample.alignedvariants():
+        for s in test_sample.dna_vars:
             print s.id, s.seq.tostring()
 
-        assert 1 == 0, 'Write more tests'
         os.remove(sup_name)
         os.remove(far_name)
+
+        assert 1 == 0, 'Write more tests'
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+''' Provides some methods to work with needle (EMBOSS) alignments'''
 __author__ = "Osvaldo Zagordi"
 __version__ = "$Revision: 0.1 $"
 __date__ = "$Date: 2012/06/6$"
@@ -8,7 +9,8 @@ __license__ = ""
 import sys
 import os
 
-dna_code = {'A': set(['A']),
+dna_code = {
+    'A': set(['A']),
     'C': set(['C']),
     'G': set(['G']),
     'T': set(['T']),
@@ -58,7 +60,7 @@ class AlignInstance:
     '''
     Represents a single pairwise alignment
     '''
-    def __init__(self, id_a, id_b, seq_a, seq_b, score, \
+    def __init__(self, id_a, id_b, seq_a, seq_b, score,
                  descr_a=None, descr_b=None):
         '''
         Initialization needs id of both sequences, zipped sequence
@@ -89,11 +91,11 @@ class AlignInstance:
             i += 1
             try:
                 p = it_pair.next()
-            except:
+            except StopIteration:
                 break
             if p is None:
                 break
-            if start == None:
+            if start is None:
                 if '-' not in p:
                     start = i
             else:
@@ -108,19 +110,19 @@ class AlignInstance:
         self.ident = 0
         self.mismatches = 0
 
-        it_pair = itertools.izip(self.seq_a[start - 1:stop], \
+        it_pair = itertools.izip(self.seq_a[start - 1:stop],
                                  self.seq_b[start - 1:stop])
         while True:
             i += 1
             try:
                 p = it_pair.next()
-            except:
+            except StopIteration:
                 break
             if p is None:
                 break
             if p == ('-', '-'):
                 print >> sys.stderr, ' double gap in %s %s' % \
-                                    (self.id_a, self.id_b)
+                    (self.id_a, self.id_b)
             if p[0] == '-':
                 self.insertions += 1
             elif p[1] == '-':
@@ -140,7 +142,7 @@ class AlignInstance:
         '''
             Print all information to stderr
             '''
-        import sys
+
         print >> sys.stderr, 'id_a:', self.id_a
         print >> sys.stderr, 'id_b:', self.id_b
         print >> sys.stderr, 'start:', self.start
@@ -151,6 +153,7 @@ class AlignInstance:
 
 
 def alstart(seq_a, seq_b):
+    '''Returns starting position of an alignment, given two sequences'''
     import tempfile
 
     f = tempfile.NamedTemporaryFile()  # delete=False)
@@ -183,13 +186,12 @@ def alignfile2dict(al_files, name, gap_open, gap_extend):
         a, b = alignment[0].seq.tostring().upper(), \
             alignment[1].seq.tostring().upper()
 
-        al_set[id_a][id_b] = AlignInstance(id_a, id_b, a, b, \
-                                           descr_a, descr_b)
+        al_set[id_a][id_b] = AlignInstance(id_a, id_b, a, b, descr_a, descr_b)
 
     return al_set
 
 
-def needle_align(a_seq, b_seq, out_file, go=6.0, ge=3.0, \
+def needle_align(a_seq, b_seq, out_file, go=6.0, ge=3.0,
                  reverse1=False, reverse2=False):
     """ Does not require cmline, neither from Biopython,
         nor from pythonlib
@@ -213,7 +215,7 @@ def needle_align(a_seq, b_seq, out_file, go=6.0, ge=3.0, \
             if Verbose:
                 print >> sys.stderr, "'%s'" % line1
                 print >> sys.stderr, \
-            "Child diri_sampler was terminated by signal", -retcode
+                    "Child diri_sampler was terminated by signal", -retcode
         else:
             if Verbose:
                 print "Child diri_sampler returned %i" % retcode

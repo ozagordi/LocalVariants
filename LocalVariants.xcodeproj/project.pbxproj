@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
+		6C6CC3D4162D8F6000517583 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README.md; sourceTree = "<group>"; };
 		6CDE65DF15580DE600D5DBAC /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; path = src; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -14,6 +15,7 @@
 		6CDE65CF15580A9800D5DBAC = {
 			isa = PBXGroup;
 			children = (
+				6C6CC3D4162D8F6000517583 /* README.md */,
 				6CDE65DF15580DE600D5DBAC /* src */,
 			);
 			sourceTree = "<group>";

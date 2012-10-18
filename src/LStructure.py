@@ -19,15 +19,16 @@ MINIMUM_READ = 5.0
 Entrez.email = None  # To tell NCBI who you are
 mod_dir = os.path.split(__file__)[0]
 hiv_filename = os.path.join(mod_dir, "HIV-HXB2.fasta")
-print hiv_filename
+
 if not os.path.isfile(hiv_filename):
     # Downloading...
+    print >> sys.stderr, 'Downloading HIV reference from PubMed'
     handle = Entrez.efetch(db="nucleotide", id="1906382",
                            rettype="fasta", retmode="text")
     seq_record = SeqIO.read(handle, "fasta")
     handle.close()
     SeqIO.write(seq_record, hiv_filename, 'fasta')
-    print "Saved"
+    print >> sys.stderr, 'Saved to', hiv_filename
 HXB2 = list(SeqIO.parse(hiv_filename, 'fasta'))[0]
 HXB2.alphabet = IUPAC.ambiguous_dna
 
@@ -35,8 +36,8 @@ hcv_filename = os.path.join(mod_dir, "HCV1.fasta")
 HCV = list(SeqIO.parse(hcv_filename, 'fasta'))[0]
 HCV.alphabet = IUPAC.ambiguous_dna
 
-
-translation_table = {  # 64 codons + '---'
+# 64 codons + '---'
+translation_table = {
     'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L', 'TCT': 'S',
     'TCC': 'S', 'TCA': 'S', 'TCG': 'S', 'TAT': 'Y', 'TAC': 'Y',
     'TGT': 'C', 'TGC': 'C', 'TGG': 'W', 'CTT': 'L', 'CTC': 'L',
@@ -60,13 +61,13 @@ def find_frame(read):
     try:
         counts = [(translate(read[f:]).count('*'), f + 1) for f in range(3)]
     except Bio.Data.CodonTable.TranslationError:
-        counts = [(gap_translation(read[f:]).count('*'), f + 1) \
+        counts = [(gap_translation(read[f:]).count('*'), f + 1)
                   for f in range(3)]
     sor_cnt = sorted(counts)
     stop_codons, frame = sor_cnt[0]
     if stop_codons > 0:
-        warnings.warn('The sequence %s contains %dstop codons' \
-                    % (read, stop_codons))
+        warnings.warn('The sequence %s contains %dstop codons'
+                      % (read, stop_codons))
     if sor_cnt[1][0] == 0:
         warnings.warn('Two frames are possible!')
     return frame
@@ -190,7 +191,7 @@ class LocalStructure:
         self.sup_file = os.path.abspath(support_file)
         s_head, self.name = os.path.split(self.sup_file)
 
-        descriptions = [s.description \
+        descriptions = [s.description
                         for s in SeqIO.parse(self.sup_file, 'fasta')]
         self.posteriors = \
             [float(re.search('posterior=(.*)\s*ave_reads=(.*)', d).group(1))
@@ -211,7 +212,7 @@ class LocalStructure:
         # self.frame = 1
         # self.get_offset(HXB2)
 
-        sup_far = os.path.join(s_head, '-'.join(self.name.split('-')[:-1]) \
+        sup_far = os.path.join(s_head, '-'.join(self.name.split('-')[:-1])
                                + '.far')
         ns = SeqIO.parse(open(sup_far), 'fasta')
         self.n_reads = len([s for s in ns])
@@ -248,7 +249,7 @@ class LocalStructure:
                     break
 
             # replaces single gaps with consensus
-            this_seq = (p[1] if p[1] is not '-' else p[0] \
+            this_seq = (p[1] if p[1] is not '-' else p[0]
                         for p in zip(self.cons[self.frame - 1:], read))
             ws = ''.join(this_seq)
             ws = ws.replace('X', '-')
@@ -272,11 +273,12 @@ class LocalStructure:
         tot_freq = sum(aa_var_dict.values())
         for k, v in aa_var_dict.items():
             freq_here = 100 * v / tot_freq
-            trans_read = LocalVariant(Seq(k, IUPAC.protein), \
-                                seq_id='translated_reconstructed_hap_%d' % i,
-                                description='Local amino hap freq=%f' \
-                                % freq_here,
-                                frequency=freq_here)
+            trans_read = LocalVariant(Seq(k, IUPAC.protein),
+                                      seq_id='translated_reconstructed_hap_%d'
+                                      % i,
+                                      description='Local amino hap freq=%f'
+                                      % freq_here,
+                                      frequency=freq_here)
             self.prot_vars.append(trans_read)
             i += 1
 
@@ -398,9 +400,9 @@ def parse_com_line():
     optparser.add_option("-s", "--support", type="string", default="",
                          help="support file", dest="support")
     optparser.add_option("-g", "--gene", type="string", default="protease",
-                         help="gene name", dest="gene")
-    optparser.add_option("-o", "--organism", type="string",
-                         help="organism: HIV, HCV", dest="organism")
+                         help="gene name <%default>", dest="gene")
+    optparser.add_option("-o", "--organism", type="string", default="HIV",
+                         help="organism: HIV, HCV <%default>", dest="organism")
     optparser.add_option("-r", "--reference", type="string", default="",
                          help="fasta file with reference", dest="reference")
 
@@ -436,7 +438,7 @@ if __name__ == '__main__':
         ref_seq = HCV[r_start - 1:r_stop].seq
         ref_seq_aa = ref_seq.translate()
     print >> sys.stderr, 'Reference is %s from %s' % \
-                            (options.gene, options.organism)
+        (options.gene, options.organism)
 
     sample_ls = LocalStructure(support_file=sup_file, ref=ref_seq)
 
