@@ -211,11 +211,20 @@ class LocalStructure:
         # except:
         # self.frame = 1
         # self.get_offset(HXB2)
-
-        sup_far = os.path.join(s_head, '-'.join(self.name.split('-')[:-1])
+        try:
+            sup_far = os.path.join(s_head, '-'.join(self.name.split('-')[:-1])
                                + '.far')
-        ns = SeqIO.parse(open(sup_far), 'fasta')
-        self.n_reads = len([s for s in ns])
+            ns = SeqIO.parse(open(sup_far), 'fasta')
+            self.n_reads = len([s for s in ns])
+        except IOError:
+            cov_h = open('coverage.txt')
+            for cov_line in cov_h:
+                if cov_line.split()[0].split('.')[0] == \
+                    self.name.split('.')[0]:
+                    self.n_reads = int(cov_line.split()[4])
+                    break
+            cov_h.close()
+
         self.dna_vars = []
         self.prot_vars = []
 
@@ -401,7 +410,7 @@ def parse_com_line():
                          help="support file", dest="support")
     optparser.add_option("-g", "--gene", type="string", default="protease",
                          help="gene name <%default>", dest="gene")
-    optparser.add_option("-o", "--organism", type="string", default="HIV",
+    optparser.add_option("-o", "--organism", type="string", default="",
                          help="organism: HIV, HCV <%default>", dest="organism")
     optparser.add_option("-r", "--reference", type="string", default="",
                          help="fasta file with reference", dest="reference")
@@ -433,12 +442,14 @@ if __name__ == '__main__':
         r_start, r_stop = HIV_gene_coord[options.gene]
         ref_seq = HXB2[r_start - 1:r_stop].seq
         ref_seq_aa = ref_seq.translate()
+        print >> sys.stderr, 'Reference is %s from %s' % \
+            (options.gene, options.organism)
     elif options.organism == 'HCV':
         r_start, r_stop = HCV_gene_coord[options.gene]
         ref_seq = HCV[r_start - 1:r_stop].seq
         ref_seq_aa = ref_seq.translate()
-    print >> sys.stderr, 'Reference is %s from %s' % \
-        (options.gene, options.organism)
+        print >> sys.stderr, 'Reference is %s from %s' % \
+            (options.gene, options.organism)
 
     sample_ls = LocalStructure(support_file=sup_file, ref=ref_seq)
 
