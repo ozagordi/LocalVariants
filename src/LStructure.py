@@ -173,8 +173,11 @@ class LocalVariant(SeqRecord):
         # Extracts only the matching region and lists mutations
         this.summary()
         m_start, m_stop = this.start, this.stop
-        it_pair = zip(this.seq_a[m_start - 1:m_stop],
-                      this.seq_b[m_start - 1:m_stop])
+        try:
+            it_pair = zip(this.seq_a[m_start - 1:m_stop],
+                          this.seq_b[m_start - 1:m_stop])
+        except TypeError:
+            it_pair = []
         mut_list = []
         for i, p in enumerate(it_pair):
             if p[0].upper() != p[1].upper():

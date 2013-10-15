@@ -13,6 +13,9 @@ src/*.pyc
 # test directory
 test/
 
+# Xcode data not useful
+*xcodeproj/
+
 #####
 # OS X temporary files that should never be committed
 

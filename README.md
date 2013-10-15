@@ -28,14 +28,19 @@ Default reference is HIV protease.
                     organism: HIV, HCV <HIV>
         -r REFERENCE, --reference=REFERENCE
                     fasta file with reference
-                        
+
+### Requirements
+3. Python (**not** Python 3)
+1. [Biopython](http://biopython.org/)
+2. `needle` from [EMBOSS](http://emboss.sourceforge.net/) software suite
+
 ### Example
     [user@host amplicon_1]$ LStructure.py -s your_window-support.fas
     Support is your_window-support.fas
     Reference is protease from HIV
     Total reads: 1017.959
 
-    [user@host amplicon_1]$ ls -1 -rht
+    [user@host amplicon_1]$ ls -1rht
     ...
     prot_seqs.fasta
     mutations_aa.csv

@@ -2,7 +2,7 @@
 ''' Provides some methods to work with needle (EMBOSS) alignments'''
 __author__ = "Osvaldo Zagordi"
 __version__ = "$Revision: 0.1 $"
-__date__ = "$Date: 2012/06/6$"
+__date__ = "$Date: 2012/06/06$"
 __copyright__ = ""
 __license__ = ""
 
@@ -81,6 +81,7 @@ class AlignInstance:
         internal gaps, and identity
         '''
         import itertools
+        import warnings
 
         start = None
         stop = None
@@ -104,7 +105,9 @@ class AlignInstance:
 
         self.start = start
         self.stop = stop
-
+        if start == None and stop == None:
+            warnings.warn('The two sequences do not align')
+            return
         self.insertions = 0  # gap in the first sequence
         self.deletions = 0  # gap in the second sequence
         self.ident = 0
@@ -112,6 +115,16 @@ class AlignInstance:
 
         it_pair = itertools.izip(self.seq_a[start - 1:stop],
                                  self.seq_b[start - 1:stop])
+
+        # determine which sequence type to count mismatches correctly
+        both = self.seq_a + self.seq_b
+        both = both.replace('-', '').replace('*', '')
+        nt_count = sum([both.upper().count(nt) for nt in ['A', 'C', 'G', 'T']])
+        if nt_count > 0.75 * len(both):
+            seq_type = 'dna'
+        else:
+            seq_type = 'aa'
+
         while True:
             i += 1
             try:
@@ -129,12 +142,12 @@ class AlignInstance:
                 self.deletions += 1
             if p[0].upper() == p[1].upper():
                 self.ident += 1
-            try:
-                if dna_code[p[0].upper()] & dna_code[p[1].upper()] == set([]):
-                    self.mismatches += 1
-            except KeyError:  # in case of amino acids
-                if p[0].upper() != p[1].upper():
-                    self.mismatches += 1
+            # count mismatches with appropriate method for dna and aa
+            if seq_type == 'dna' and \
+               (dna_code[p[0].upper()] & dna_code[p[1].upper()] == set([])):
+                self.mismatches += 1
+            elif seq_type == 'aa' and (p[0].upper() != p[1].upper()):
+                self.mismatches += 1
 
         return
 
