@@ -190,6 +190,7 @@ class LocalStructure:
         frame, the offset and list the variants'''
     def __init__(self, support_file, ref):
         import re
+        import glob
 
         self.sup_file = os.path.abspath(support_file)
         s_head, self.name = os.path.split(self.sup_file)
@@ -208,26 +209,34 @@ class LocalStructure:
         self.seq_obj = SeqIO.parse(self.sup_file, 'fasta')
         self.ref = ref  # HXB2[g_start - 1:g_stop]
         self.cons = Seq(self.get_cons(), IUPAC.unambiguous_dna)
-
-        # try:
         self.frame = find_frame(self.cons)
-        # except:
-        # self.frame = 1
-        # self.get_offset(HXB2)
+
+        # shorah 0.6 introduced strand bias correction to improve precision
+        # in  SNVs calling. Results are in file SNVs_*_final.csv.
+        snv_files = glob.glob('*_final.csv')
+        assert len(snv_files) == 1
+        snv_file = snv_files[0]
+        csv_reader = open(snv_file)
+        csv_reader.next()
+        snvs = [row.split(',')[2] + row.split(',')[1] + row.split(',')[3]
+                for row in csv_reader]
+        self.snvs = snvs
+
         try:
             sup_far = os.path.join(s_head, '-'.join(self.name.split('-')[:-1])
-                               + '.far')
+                                   + '.far')
             ns = SeqIO.parse(open(sup_far), 'fasta')
             self.n_reads = len([s for s in ns])
         except IOError:
             cov_h = open('coverage.txt')
             for cov_line in cov_h:
                 if cov_line.split()[0].split('.')[0] == \
-                    self.name.split('.')[0]:
+                        self.name.split('.')[0]:
                     self.n_reads = int(cov_line.split()[4])
                     break
             cov_h.close()
-
+        if not self.n_reads:
+            sys.exit('coverage not parsed, n of reads unknown')
         self.dna_vars = []
         self.prot_vars = []
 
@@ -237,7 +246,7 @@ class LocalStructure:
         both at DNA and amino acids level. Returns a list of
         LocalVariant objects.
         '''
-        import tempfile
+
         import numpy as np
 
         var_dict = {}
@@ -269,17 +278,41 @@ class LocalStructure:
             var_dict[ws] = var_dict.get(ws, 0) + ave_reads
             aa_var_dict[ws_aa] = aa_var_dict.get(ws_aa, 0) + ave_reads
 
-        i = 1
         tot_freq = sum(var_dict.values())
         print >> sys.stderr, 'Total reads:', tot_freq
+
+        supported_var_dict = {}  # supported by SNVs
+        # first pass excludes the variants unsupported in SNVs final file
         for k, v in var_dict.items():
+            tsr = LocalVariant(Seq(k, IUPAC.unambiguous_dna),
+                               seq_id='reconstructed_hap',
+                               description='to_be_confirmed',
+                               frequency=0.0)
+
+            tsr.get_mutations(self.ref)
+            save = True
+            for mt in tsr.mutations:
+                if str(mt) not in self.snvs:
+                    save = False
+            if save:
+                supported_var_dict[k] = v
+
+        i = 1
+        tot_freq = sum(supported_var_dict.values())
+        for k, v in supported_var_dict.items():
             freq_here = 100 * v / tot_freq
             tsr = LocalVariant(Seq(k, IUPAC.unambiguous_dna),
                                seq_id='reconstructed_hap_%d' % i,
-                               description='Local hap freq=%f' % freq_here,
+                               description='Local nt haplo freq=%2.1f'
+                               % freq_here,
                                frequency=freq_here)
             self.dna_vars.append(tsr)
             i += 1
+
+        # now amino acids
+        for sws, v in supported_var_dict.items():
+            ws_aa = gap_translation(sws)
+            aa_var_dict[ws_aa] = aa_var_dict.get(ws_aa, 0) + ave_reads
 
         i = 1
         tot_freq = sum(aa_var_dict.values())
@@ -288,7 +321,7 @@ class LocalStructure:
             trans_read = LocalVariant(Seq(k, IUPAC.protein),
                                       seq_id='translated_reconstructed_hap_%d'
                                       % i,
-                                      description='Local amino hap freq=%f'
+                                      description='Local amino hap freq=%2.1f'
                                       % freq_here,
                                       frequency=freq_here)
             self.prot_vars.append(trans_read)
@@ -302,12 +335,7 @@ class LocalStructure:
         self.dna_vars = [self.dna_vars[i] for i in dna_argsort]
         self.prot_vars = [self.prot_vars[i] for i in aa_argsort]
 
-        # When run in Xcode, working directory is root
         wd = os.getcwd()
-        if wd == '/':
-            wd = tempfile.gettempdir()
-            print >> sys.stderr, 'Writing to directory', wd
-
         SeqIO.write(self.dna_vars, wd + '/dna_seqs.fasta', 'fasta')
         SeqIO.write(self.prot_vars, wd + '/prot_seqs.fasta', 'fasta')
 
@@ -406,25 +434,25 @@ def parse_com_line():
     '''Only tries optparse (deprecated in 2.7, in future add argparse)'''
     import optparse
 
-    usage = "usage: %prog -s support_file [options]"
+    usage = "usage: %prog -s support_file -r reference"
     optparser = optparse.OptionParser(usage=usage)
 
     optparser.add_option("-s", "--support", type="string", default="",
                          help="support file", dest="support")
-    optparser.add_option("-g", "--gene", type="string", default="protease",
-                         help="gene name <%default>", dest="gene")
-    optparser.add_option("-o", "--organism", type="string", default="",
-                         help="organism: HIV, HCV <%default>", dest="organism")
     optparser.add_option("-r", "--reference", type="string", default="",
-                         help="fasta file with reference", dest="reference")
-
+                         help="fasta file with the reference used in running \
+                         shorah", dest="reference")
+    # optparser.add_option("-g", "--gene", type="string", default="protease",
+    #                      help="gene name <%default>", dest="gene")
+    # optparser.add_option("-o", "--organism", type="string", default="",
+    #                      help="organism: HIV, HCV <%default>", dest="organism")
     (opts, args) = optparser.parse_args()
     if not opts.support:
         optparser.error("specifying support file is mandatory")
-    if opts.reference and opts.organism:
-        optparser.error("options -r and -o are mutually exclusive")
-
-    optparser.set_defaults(organism="HIV")
+    # if opts.reference and opts.organism:
+    #     optparser.error("options -r and -o are mutually exclusive")
+    # 
+    # optparser.set_defaults(organism="HIV")
     (opts, args) = optparser.parse_args()
 
     return opts, args
@@ -441,22 +469,23 @@ if __name__ == '__main__':
         ref_seq = ref_rec.seq
         ref_seq_aa = ref_seq.translate()
         print >> sys.stderr, 'Reference is %s from file' % ref_rec.id
-    elif options.organism == 'HIV':
-        r_start, r_stop = HIV_gene_coord[options.gene]
-        ref_seq = HXB2[r_start - 1:r_stop].seq
-        ref_seq_aa = ref_seq.translate()
-        print >> sys.stderr, 'Reference is %s from %s' % \
-            (options.gene, options.organism)
-    elif options.organism == 'HCV':
-        r_start, r_stop = HCV_gene_coord[options.gene]
-        ref_seq = HCV[r_start - 1:r_stop].seq
-        ref_seq_aa = ref_seq.translate()
-        print >> sys.stderr, 'Reference is %s from %s' % \
-            (options.gene, options.organism)
+    # elif options.organism == 'HIV':
+    #     r_start, r_stop = HIV_gene_coord[options.gene]
+    #     ref_seq = HXB2[r_start - 1:r_stop].seq
+    #     ref_seq_aa = ref_seq.translate()
+    #     print >> sys.stderr, 'Reference is %s from %s' % \
+    #         (options.gene, options.organism)
+    # elif options.organism == 'HCV':
+    #     r_start, r_stop = HCV_gene_coord[options.gene]
+    #     ref_seq = HCV[r_start - 1:r_stop].seq
+    #     ref_seq_aa = ref_seq.translate()
+    #     print >> sys.stderr, 'Reference is %s from %s' % \
+    #         (options.gene, options.organism)
 
     sample_ls = LocalStructure(support_file=sup_file, ref=ref_seq)
 
     sample_ls.alignedvariants(threshold=0.95)
+
     sample_ls.print_mutations(ref_seq, seq_type='DNA', out_format='csv',
                               out_file='mutations_DNA.csv')
 
