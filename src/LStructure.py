@@ -431,56 +431,57 @@ class LocalStructure:
 
 
 def parse_com_line():
-    '''Only tries optparse (deprecated in 2.7, in future add argparse)'''
-    import optparse
+    '''Standard option parsing'''
+    options, args = None, None
 
-    usage = "usage: %prog -s support_file -r reference"
-    optparser = optparse.OptionParser(usage=usage)
+    try:
+        import argparse
 
-    optparser.add_option("-s", "--support", type="string", default="",
-                         help="support file", dest="support")
-    optparser.add_option("-r", "--reference", type="string", default="",
-                         help="fasta file with the reference used in running \
-                         shorah", dest="reference")
-    # optparser.add_option("-g", "--gene", type="string", default="protease",
-    #                      help="gene name <%default>", dest="gene")
-    # optparser.add_option("-o", "--organism", type="string", default="",
-    #                      help="organism: HIV, HCV <%default>", dest="organism")
-    (opts, args) = optparser.parse_args()
-    if not opts.support:
-        optparser.error("specifying support file is mandatory")
-    # if opts.reference and opts.organism:
-    #     optparser.error("options -r and -o are mutually exclusive")
-    # 
-    # optparser.set_defaults(organism="HIV")
-    (opts, args) = optparser.parse_args()
+        # default action is 'store'
+        parser = argparse.ArgumentParser(description='Local structure',
+                                         epilog='Input are mandatory')
+        parser.add_argument('-s', '--support', dest='support',
+                            help='support file')
+        parser.add_argument('-r', '--reference', dest='reference',
+                            help='fasta file with the reference used in \
+                            running shorah')
+        args = parser.parse_args()
 
-    return opts, args
+    except ImportError:
+        import optparse
+
+        usage = "usage: %prog -s support_file -r reference"
+        optparser = optparse.OptionParser(usage=usage)
+
+        optparser.add_option("-s", "--support", type="string", default="",
+                             help="support file", dest="support")
+        optparser.add_option("-r", "--reference", type="string", default="",
+                             help="fasta file with the reference used in \
+                             running shorah", dest="reference")
+        (options, args) = optparser.parse_args()
+
+        if not options.support:
+            optparser.error("specifying support file is mandatory")
+
+    return options, args
 
 
 if __name__ == '__main__':
 
-    options, arguments = parse_com_line()
-    sup_file = options.support
+    options, args = parse_com_line()
+    if args:
+        args = vars(args)
+    else:
+        args = vars(options)
+
+    sup_file = args['support']
     print 'Support is', sup_file
 
-    if options.reference:
-        ref_rec = list(SeqIO.parse(options.reference, 'fasta'))[0]
+    if args['reference']:
+        ref_rec = list(SeqIO.parse(args['reference'], 'fasta'))[0]
         ref_seq = ref_rec.seq
         ref_seq_aa = ref_seq.translate()
         print >> sys.stderr, 'Reference is %s from file' % ref_rec.id
-    # elif options.organism == 'HIV':
-    #     r_start, r_stop = HIV_gene_coord[options.gene]
-    #     ref_seq = HXB2[r_start - 1:r_stop].seq
-    #     ref_seq_aa = ref_seq.translate()
-    #     print >> sys.stderr, 'Reference is %s from %s' % \
-    #         (options.gene, options.organism)
-    # elif options.organism == 'HCV':
-    #     r_start, r_stop = HCV_gene_coord[options.gene]
-    #     ref_seq = HCV[r_start - 1:r_stop].seq
-    #     ref_seq_aa = ref_seq.translate()
-    #     print >> sys.stderr, 'Reference is %s from %s' % \
-    #         (options.gene, options.organism)
 
     sample_ls = LocalStructure(support_file=sup_file, ref=ref_seq)
 

@@ -10,14 +10,14 @@ It does some postprocessing to improve the reliability and readability of
 variants:
 
 - parses haplotypes with high posterior support (default: > 0.9) and minimum
-read count (default: 5 reads);
+  read count (default: 5 reads);
 - corrects the single gaps frameshift inducing indels;
 - resolves aminoacid indels to the closest possible correction;
 - merges the identical haplotypes;
 - eliminates haplotypes displaying SNVs removed looking at the strand bias;
 - writes fasta files with frequencies, sorted;
 - writes CSV files with the lists of single site mutations and their
-frequencies both for DNA and for aminoacids.
+  frequencies both for DNA and for aminoacids.
 
 Default reference is HIV protease.
     Usage: LStructure.py -s support_file -r reference_file
