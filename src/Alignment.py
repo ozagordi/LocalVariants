@@ -196,8 +196,8 @@ def alignfile2dict(al_files, name, gap_open, gap_extend):
             alignment[1].id.split('#')[0]
         descr_a = alignment[0].description
         descr_b = alignment[1].description
-        a, b = alignment[0].seq.tostring().upper(), \
-            alignment[1].seq.tostring().upper()
+        a, b = str(alignment[0].seq).upper(), \
+            str(alignment[1].seq).upper()
 
         al_set[id_a][id_b] = AlignInstance(id_a, id_b, a, b, descr_a, descr_b)
 

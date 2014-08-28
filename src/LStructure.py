@@ -5,13 +5,17 @@ import sys
 import os
 import warnings
 
+import logging
+import logging.handlers
+
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import IUPAC
 from Bio import Entrez
 
-from Locals import HIV_gene_coord, HCV_gene_coord
+# Make a global logging object.
+lslog = logging.getLogger(__name__)
 
 MINIMUM_READ = 5.0
 
@@ -58,8 +62,19 @@ def find_frame(read):
     '''
     from Bio.Seq import translate
     import Bio
+
+    # use this to cut read at multiple of three length
+    rem = len(read) % 3
+    last_pos = rem if rem else None
     try:
-        counts = [(translate(read[f:]).count('*'), f + 1) for f in range(3)]
+        read = read[:-last_pos]
+    except TypeError:
+        pass    
+    assert len(read) % 3 == 0, read
+    read_len = len(read) - 3
+    try:
+        counts = [(translate(read[f:read_len + f]).count('*'), f + 1)
+                  for f in range(3)]
     except Bio.Data.CodonTable.TranslationError:
         counts = [(gap_translation(read[f:]).count('*'), f + 1)
                   for f in range(3)]
@@ -69,7 +84,8 @@ def find_frame(read):
         warnings.warn('The sequence %s contains %dstop codons'
                       % (read, stop_codons))
     if sor_cnt[1][0] == 0:
-        warnings.warn('Two frames are possible!')
+        warnings.warn('Two frames are possible! %d and %d' %
+                      (frame, sor_cnt[1][1]))
     return frame
 
 
@@ -77,6 +93,7 @@ def reframe(read, n_gaps):
     '''It transforms AC---GTGT or ACGT---GT into ACG---TGT if n_gaps=3
         Read must already be in frame
     '''
+    import re
     gap_region = '-' * n_gaps
     # check that read is in frame, except for the
     # large gap region
@@ -87,9 +104,22 @@ def reframe(read, n_gaps):
     if gap_translation(check_r).count('*') > 0:
         warnings.warn('STOP codon found, seq=' + str(check_r))
 
+    # first the case with 2 + 1 gaps
+    # CAG--G-AC
+    # CAG-G--AC
+    # CA-G--GAC
+    match_21 = re.search('\w*(--)\w*(-)\w*', read)
+    if match_21:
+        first_gap = match_21.start(1)
+        print first_gap
+        print read
+        print read[:first_gap]
+        sys.exit()
+
     # move a single letter right or left, in order to have a
     # correct frame (min edit distance to the coding sequence)
     start = read.find(gap_region)
+
     stop = start + n_gaps
     if start % 3 == 1:
         flank_left = read[:start - 1]
@@ -107,7 +137,7 @@ def gap_translation(seq_in, frame=1):
         '''
     aa = []
     try:
-        s = seq_in.tostring().upper()
+        s = str(seq_in).upper()
     except AttributeError:
         s = seq_in.upper()
     for i in range(frame - 1, len(s), 3):
@@ -161,25 +191,44 @@ class LocalVariant(SeqRecord):
         outfile = tempfile.NamedTemporaryFile()
         out_name = outfile.name
         outfile.close()
-        r_str = r_seq.tostring()
+        r_str = str(r_seq)
         Alignment.needle_align('asis:%s' % r_str,
-                               'asis:%s' % self.seq.tostring(),
-                               out_name, go=20.0, ge=0.1)
+                               'asis:%s' % str(self.seq),
+                               out_name, go=20.0, ge=2.0)
         tal = Alignment.alignfile2dict([out_name],
-                                       'ref_mut_align', 20.0, 0.1)
+                                       'ref_mut_align', 20.0, 2.0)
         os.remove(out_name)
         ka = tal.keys()[0]
         this = tal[ka]['asis']
         # Extracts only the matching region and lists mutations
         this.summary()
         m_start, m_stop = this.start, this.stop
-        try:
-            it_pair = zip(this.seq_a[m_start - 1:m_stop],
-                          this.seq_b[m_start - 1:m_stop])
-        except TypeError:
-            it_pair = []
+        lslog.info('start: %d  stop: %d' % (m_start, m_stop))
+
+        # Check if alignment starts before or after the reference
+        if not this.seq_a.startswith('-') and this.seq_b.startswith('-'):
+            # after
+            it_pair = zip(r_str[m_start - 1:m_stop],
+                          str(self.seq))
+        elif this.seq_a.startswith('-') and not this.seq_b.startswith('-'):
+            # before
+            it_pair = zip(r_str[m_start - 1:m_stop],
+                          str(self.seq)[m_start - 1:m_stop])
+        elif not this.seq_a.startswith('-') and not this.seq_b.startswith('-'):
+            # together
+            it_pair = zip(r_str,
+                          str(self.seq))
+            
+        seq_dist = sum(p[0] != p[1] for p in it_pair)
+        lslog.info('distance between ref and seq: %d' % seq_dist)
+        if seq_dist > 20:
+            lslog.warning('distance > 20')
+            # print ''.join(p[0] for p in it_pair)
+            # print ''.join(p[1] for p in it_pair)
+
         mut_list = []
         for i, p in enumerate(it_pair):
+            # print >> sys.stderr, '%s%d%s' % (p[0], i + m_start, p[1])
             if p[0].upper() != p[1].upper():
                 mut_list.append(Mutation(i + m_start, p[0], p[1]))
         self.mutations = mut_list
@@ -197,19 +246,19 @@ class LocalStructure:
 
         descriptions = [s.description
                         for s in SeqIO.parse(self.sup_file, 'fasta')]
+        prog = re.compile('posterior=(\d*.*\d*)[-\s\t]ave_reads=(\d*.*\d*)')
         self.posteriors = \
-            [float(re.search('posterior=(.*)\s*ave_reads=(.*)', d).group(1))
-                for d in descriptions]
+            [float(prog.search(d).group(1)) for d in descriptions]
         self.ave_reads = \
-            [float(re.search('posterior=(.*)\s*ave_reads=(.*)', d).group(2))
-                for d in descriptions]
-        #   self.ref_obj = HXB2
-        #   self.gene = gene
-        #   g_start, g_stop = gene_coord[self.gene]
+            [float(prog.search(d).group(2)) for d in descriptions]
+        lslog.info('parsed %d sequences' % len(descriptions))
+
         self.seq_obj = SeqIO.parse(self.sup_file, 'fasta')
         self.ref = ref  # HXB2[g_start - 1:g_stop]
         self.cons = Seq(self.get_cons(), IUPAC.unambiguous_dna)
         self.frame = find_frame(self.cons)
+        lslog.info('consensus starts with %s; frame is %d' %
+                   (self.cons[:12], self.frame))
 
         # shorah 0.6 introduced strand bias correction to improve precision
         # in  SNVs calling. Results are in file SNVs_*_final.csv.
@@ -221,12 +270,15 @@ class LocalStructure:
         snvs = [row.split(',')[2] + row.split(',')[1] + row.split(',')[3]
                 for row in csv_reader]
         self.snvs = snvs
+        lslog.info('%d SNVs found in %s' % (len(snvs), snv_file))
 
+        # now parsing the total number of reads
         try:
             sup_far = os.path.join(s_head, '-'.join(self.name.split('-')[:-1])
                                    + '.far')
             ns = SeqIO.parse(open(sup_far), 'fasta')
-            self.n_reads = len([s for s in ns])
+            self.ds = len([s for s in ns])
+            lslog.info('%d reads; found parsing far.file' % self.ds)
         except IOError:
             cov_h = open('coverage.txt')
             for cov_line in cov_h:
@@ -235,54 +287,36 @@ class LocalStructure:
                     self.n_reads = int(cov_line.split()[4])
                     break
             cov_h.close()
+            lslog.info('%d reads; found in coverage.txt' % self.n_reads)
         if not self.n_reads:
+            lslog.error('coverage not parsed, n of reads unknown')
             sys.exit('coverage not parsed, n of reads unknown')
         self.dna_vars = []
-        self.prot_vars = []
 
     def alignedvariants(self, threshold=0.9):
-        '''Parses posterior, frequency, reframe large deletions,
-        replaces single deletions and merges identical sequences,
-        both at DNA and amino acids level. Returns a list of
+        '''Merges sequences identical at DNA level. Returns a list of
         LocalVariant objects.
         '''
 
         import numpy as np
 
         var_dict = {}
-        aa_var_dict = {}
         for i, s in enumerate(self.seq_obj):
             post, ave_reads = self.posteriors[i], self.ave_reads[i]
             if post < threshold or ave_reads < MINIMUM_READ:
                 continue
             if post > 1.0:
                 print >> sys.stderr, 'WARNING: posterior=', post
-
-            # reframe large deletions
-            # frame is 1-based numbered
-            read = s.seq.tostring()[self.frame - 1:]
-            max_len = len(read.strip('-')) / 3 * 3
-            for i in range(max_len, -1, -3):
-                gap_region = '-' * i
-                if gap_region in read.strip('-'):
-                    read = reframe(read, i)
-                    read = read.replace(gap_region, 'X' * i)
-                    break
-
-            # replaces single gaps with consensus
-            this_seq = (p[1] if p[1] is not '-' else p[0]
-                        for p in zip(self.cons[self.frame - 1:], read))
-            ws = ''.join(this_seq)
-            ws = ws.replace('X', '-')
-            ws_aa = gap_translation(ws)
+                lslog.warning('posterior=%f' % post)
+            ws = str(s.seq)
             var_dict[ws] = var_dict.get(ws, 0) + ave_reads
-            aa_var_dict[ws_aa] = aa_var_dict.get(ws_aa, 0) + ave_reads
 
         tot_freq = sum(var_dict.values())
         print >> sys.stderr, 'Total reads:', tot_freq
 
         supported_var_dict = {}  # supported by SNVs
         # first pass excludes the variants unsupported in SNVs final file
+        lslog.info(self.snvs)
         for k, v in var_dict.items():
             tsr = LocalVariant(Seq(k, IUPAC.unambiguous_dna),
                                seq_id='reconstructed_hap',
@@ -291,11 +325,16 @@ class LocalStructure:
 
             tsr.get_mutations(self.ref)
             save = True
+            lslog.info('Checking mutations on %s' % k)
             for mt in tsr.mutations:
                 if str(mt) not in self.snvs:
                     save = False
+                    lslog.debug('%s not supported' % str(mt))
             if save:
                 supported_var_dict[k] = v
+
+        if len(supported_var_dict) == 0:
+            raise Exception("No supported variants!")
 
         i = 1
         tot_freq = sum(supported_var_dict.values())
@@ -309,40 +348,19 @@ class LocalStructure:
             self.dna_vars.append(tsr)
             i += 1
 
-        # now amino acids
-        for sws, v in supported_var_dict.items():
-            ws_aa = gap_translation(sws)
-            aa_var_dict[ws_aa] = aa_var_dict.get(ws_aa, 0) + ave_reads
-
-        i = 1
-        tot_freq = sum(aa_var_dict.values())
-        for k, v in aa_var_dict.items():
-            freq_here = 100 * v / tot_freq
-            trans_read = LocalVariant(Seq(k, IUPAC.protein),
-                                      seq_id='translated_reconstructed_hap_%d'
-                                      % i,
-                                      description='Local amino hap freq=%2.1f'
-                                      % freq_here,
-                                      frequency=freq_here)
-            self.prot_vars.append(trans_read)
-            i += 1
-
         # sort according to freq
         dna_freqs = [s.frequency for s in self.dna_vars]
-        aa_freqs = [s.frequency for s in self.prot_vars]
         dna_argsort = np.argsort(dna_freqs)[::-1]
-        aa_argsort = np.argsort(aa_freqs)[::-1]
         self.dna_vars = [self.dna_vars[i] for i in dna_argsort]
-        self.prot_vars = [self.prot_vars[i] for i in aa_argsort]
 
         wd = os.getcwd()
         SeqIO.write(self.dna_vars, wd + '/dna_seqs.fasta', 'fasta')
-        SeqIO.write(self.prot_vars, wd + '/prot_seqs.fasta', 'fasta')
+        lslog.info('Sequences written to file')
 
-    def print_mutations(self, rm_seq, seq_type='DNA',
-                        out_format='csv', out_file=sys.stdout):
+
+    def print_mutations(self, rm_seq, out_format='csv', out_file=sys.stdout):
         '''As the name says
-            '''
+        '''
 
         from operator import itemgetter
         if out_format == 'csv':
@@ -350,11 +368,7 @@ class LocalStructure:
             fh = open(out_file, 'wb')
             writer = csv.writer(fh, dialect='excel')
 
-        if seq_type == 'aa':
-            to_print = self.prot_vars
-        else:
-            to_print = self.dna_vars
-
+        to_print = self.dna_vars
         all_mut = set([])
         for v in to_print:
             v.get_mutations(rm_seq)
@@ -400,7 +414,7 @@ class LocalStructure:
         outfile = tempfile.NamedTemporaryFile()
         out_name = outfile.name
         outfile.close()
-        Alignment.needle_align('asis:%s' % self.ref.tostring(),
+        Alignment.needle_align('asis:%s' % str(self.ref),
                                'asis:%s' % strcons,
                                out_name, go=20.0, ge=0.1)
         tal = Alignment.alignfile2dict([out_name],
@@ -432,7 +446,7 @@ class LocalStructure:
 
 def parse_com_line():
     '''Standard option parsing'''
-    options, args = None, None
+    options_l, args_l = None, None
 
     try:
         import argparse
@@ -445,7 +459,7 @@ def parse_com_line():
         parser.add_argument('-r', '--reference', dest='reference',
                             help='fasta file with the reference used in \
                             running shorah')
-        args = parser.parse_args()
+        args_l = parser.parse_args()
 
     except ImportError:
         import optparse
@@ -458,12 +472,12 @@ def parse_com_line():
         optparser.add_option("-r", "--reference", type="string", default="",
                              help="fasta file with the reference used in \
                              running shorah", dest="reference")
-        (options, args) = optparser.parse_args()
+        (options_l, args_l) = optparser.parse_args()
 
-        if not options.support:
+        if not options_l.support:
             optparser.error("specifying support file is mandatory")
 
-    return options, args
+    return options_l, args_l
 
 
 if __name__ == '__main__':
@@ -474,21 +488,30 @@ if __name__ == '__main__':
     else:
         args = vars(options)
 
+    # set logging level
+    lslog.setLevel(logging.DEBUG)
+    # This handler writes everything to a file.
+    LOG_FILENAME = './locstr.log'
+    hl = logging.handlers.RotatingFileHandler(LOG_FILENAME, 'w',
+                                              maxBytes=200000, backupCount=5)
+    fo = logging.Formatter("%(levelname)s %(asctime)s %(funcName)s\
+                          %(lineno)d %(message)s")
+    hl.setFormatter(fo)
+    lslog.addHandler(hl)
+    lslog.info(' '.join(sys.argv))
+
     sup_file = args['support']
     print 'Support is', sup_file
 
     if args['reference']:
         ref_rec = list(SeqIO.parse(args['reference'], 'fasta'))[0]
         ref_seq = ref_rec.seq
-        ref_seq_aa = ref_seq.translate()
+        #ref_seq_aa = ref_seq.translate()
         print >> sys.stderr, 'Reference is %s from file' % ref_rec.id
 
     sample_ls = LocalStructure(support_file=sup_file, ref=ref_seq)
 
     sample_ls.alignedvariants(threshold=0.95)
 
-    sample_ls.print_mutations(ref_seq, seq_type='DNA', out_format='csv',
+    sample_ls.print_mutations(ref_seq, out_format='csv',
                               out_file='mutations_DNA.csv')
-
-    sample_ls.print_mutations(ref_seq_aa, seq_type='aa',
-                              out_format='csv', out_file='mutations_aa.csv')
