@@ -35,7 +35,7 @@ Default reference is HIV protease.
 2. `needle` from [EMBOSS](http://emboss.sourceforge.net/) software suite
 
 ### Example
-    Add the `\bin` directory to your path and run the executable `localvar` as
+    Add the `bin/` directory to your path and run the executable `localvar` as
 
     [user@host amplicon_1]$ localvar -s your_window-support.fas -r HIV-HXB2.fasta
     Reference is HIV-HXB2 from HIV
