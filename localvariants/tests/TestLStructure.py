@@ -68,7 +68,7 @@ class TestLocalStructure(unittest.TestCase):
             test_sample.cons
         assert test_sample.n_reads == sum(reads)
         for s in test_sample.dna_vars:
-            print s.id, s.seq.tostring()
+            print(s.id, s.seq.tostring())
 
         os.remove(sup_name)
         os.remove(far_name)

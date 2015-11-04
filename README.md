@@ -17,7 +17,7 @@ variants:
 - eliminates haplotypes displaying SNVs removed looking at the strand bias;
 - writes fasta files with frequencies, sorted;
 - writes CSV files with the lists of single site mutations and their
-  frequencies both for DNA and for aminoacids.
+  frequencies.
 
 Default reference is HIV protease.
     Usage: LStructure.py -s support_file -r reference_file
@@ -30,21 +30,20 @@ Default reference is HIV protease.
                     fasta file with reference
 
 ### Requirements
-3. Python (**not** Python 3)
+3. Python3
 1. [Biopython](http://biopython.org/)
 2. `needle` from [EMBOSS](http://emboss.sourceforge.net/) software suite
 
 ### Example
-    [user@host amplicon_1]$ LStructure.py -s your_window-support.fas -r HIV-HXB2.fasta
-    Support is your_window-support.fas
+    Add the `\bin` directory to your path and run the executable `localvar` as
+
+    [user@host amplicon_1]$ localvar -s your_window-support.fas -r HIV-HXB2.fasta
     Reference is HIV-HXB2 from HIV
     Total reads: 1017.959
 
     [user@host amplicon_1]$ ls -1rht
     ...
-    prot_seqs.fasta
-    mutations_aa.csv
     mutations_DNA.csv
     dna_seqs.fasta
 
-The files listed above are the output of LStructure
+The files listed above are the output of LocalVariants.

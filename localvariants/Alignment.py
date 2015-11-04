@@ -87,11 +87,11 @@ class AlignInstance:
         stop = None
         i = 0
 
-        it_pair = itertools.izip(self.seq_a, self.seq_b)
+        it_pair = zip(self.seq_a, self.seq_b)
         while True:
             i += 1
             try:
-                p = it_pair.next()
+                p = next(it_pair)
             except StopIteration:
                 break
             if p is None:
@@ -113,7 +113,7 @@ class AlignInstance:
         self.ident = 0
         self.mismatches = 0
 
-        it_pair = itertools.izip(self.seq_a[start - 1:stop],
+        it_pair = zip(self.seq_a[start - 1:stop],
                                  self.seq_b[start - 1:stop])
 
         # determine which sequence type to count mismatches correctly
@@ -128,14 +128,14 @@ class AlignInstance:
         while True:
             i += 1
             try:
-                p = it_pair.next()
+                p = next(it_pair)
             except StopIteration:
                 break
             if p is None:
                 break
             if p == ('-', '-'):
-                print >> sys.stderr, ' double gap in %s %s' % \
-                    (self.id_a, self.id_b)
+                print(' double gap in %s %s' % \
+                    (self.id_a, self.id_b), file=sys.stderr)
             if p[0] == '-':
                 self.insertions += 1
             elif p[1] == '-':
@@ -156,13 +156,13 @@ class AlignInstance:
             Print all information to stderr
             '''
 
-        print >> sys.stderr, 'id_a:', self.id_a
-        print >> sys.stderr, 'id_b:', self.id_b
-        print >> sys.stderr, 'start:', self.start
-        print >> sys.stderr, 'stop:', self.stop
-        print >> sys.stderr, 'score:', self.score
-        print >> sys.stderr, 'mismatches:', self.mismatches
-        print >> sys.stderr, 'ident:', self.ident
+        print('id_a:', self.id_a, file=sys.stderr)
+        print('id_b:', self.id_b, file=sys.stderr)
+        print('start:', self.start, file=sys.stderr)
+        print('stop:', self.stop, file=sys.stderr)
+        print('score:', self.score, file=sys.stderr)
+        print('mismatches:', self.mismatches, file=sys.stderr)
+        print('ident:', self.ident, file=sys.stderr)
 
 
 def alstart(seq_a, seq_b):
@@ -174,8 +174,8 @@ def alstart(seq_a, seq_b):
     f.close()
     needle_align(seq_a, seq_b, fn)
     af = alignfile2dict([fn], 'noname', 6.0, 3.0)
-    ak1 = af.keys()[0]
-    ak2 = af[ak1].keys()[0]
+    ak1 = list(af.keys())[0]
+    ak2 = list(af[ak1].keys())[0]
     a = af[ak1][ak2]
     a.summary()
     os.remove(fn)
@@ -219,22 +219,21 @@ def needle_align(a_seq, b_seq, out_file, go=6.0, ge=3.0,
     if reverse2:
         line1 += ' -sreverse2'
     if Verbose:
-        print >> sys.stderr, line1, 'running'
+        print(line1, 'running', file=sys.stderr)
     if os.path.exists(out_file):
         return out_file, 'exists'
     try:
         retcode = subprocess.call(line1, shell=True)
         if retcode < 0:
             if Verbose:
-                print >> sys.stderr, "'%s'" % line1
-                print >> sys.stderr, \
-                    "Child diri_sampler was terminated by signal", -retcode
+                print("'%s'" % line1, file=sys.stderr)
+                print("Child diri_sampler was terminated by signal", -retcode, file=sys.stderr)
         else:
             if Verbose:
-                print "Child diri_sampler returned %i" % retcode
-    except OSError, ee:
+                print("Child diri_sampler returned %i" % retcode)
+    except OSError as ee:
         if Verbose:
-            print >> sys.stderr, "Execution of diri_sampler failed:", ee
+            print("Execution of diri_sampler failed:", ee, file=sys.stderr)
 
     return a_seq, b_seq, 'aligned'
 
@@ -243,16 +242,16 @@ def main():
     '''
     Quick test
     '''
-    print ' running a quick test '.center(60, '#')
-    print ' some information is printed '.center(60, '#')
+    print(' running a quick test '.center(60, '#'))
+    print(' some information is printed '.center(60, '#'))
     a = 'AAAAACACACGCAT-------'
     b = '---AACAC-C-CATTTTTTTT'
-    print a
-    print b
+    print(a)
+    print(b)
     ai = AlignInstance('a', 'b', a, b, 120.0)
     ai.summary()
     ai.print_info()
-    print ai.ident
+    print(ai.ident)
 
 if __name__ == '__main__':
     main()

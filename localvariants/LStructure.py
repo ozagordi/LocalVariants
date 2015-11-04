@@ -26,13 +26,13 @@ hiv_filename = os.path.join(mod_dir, "HIV-HXB2.fasta")
 
 if not os.path.isfile(hiv_filename):
     # Downloading...
-    print >> sys.stderr, 'Downloading HIV reference from PubMed'
+    print('Downloading HIV reference from PubMed', file=sys.stderr)
     handle = Entrez.efetch(db="nucleotide", id="1906382",
                            rettype="fasta", retmode="text")
     seq_record = SeqIO.read(handle, "fasta")
     handle.close()
     SeqIO.write(seq_record, hiv_filename, 'fasta')
-    print >> sys.stderr, 'Saved to', hiv_filename
+    print('Saved to', hiv_filename, file=sys.stderr)
 HXB2 = list(SeqIO.parse(hiv_filename, 'fasta'))[0]
 HXB2.alphabet = IUPAC.ambiguous_dna
 
@@ -69,7 +69,7 @@ def find_frame(read):
     try:
         read = read[:-last_pos]
     except TypeError:
-        pass    
+        pass
     assert len(read) % 3 == 0, read
     read_len = len(read) - 3
     try:
@@ -108,12 +108,12 @@ def reframe(read, n_gaps):
     # CAG--G-AC
     # CAG-G--AC
     # CA-G--GAC
-    match_21 = re.search('\w*(--)\w*(-)\w*', read)
+    match_21 = re.search(r'\w*(--)\w*(-)\w*', read)
     if match_21:
         first_gap = match_21.start(1)
-        print first_gap
-        print read
-        print read[:first_gap]
+        print(first_gap)
+        print(read)
+        print(read[:first_gap])
         sys.exit()
 
     # move a single letter right or left, in order to have a
@@ -150,7 +150,7 @@ def gap_translation(seq_in, frame=1):
 
 def str_num_compare(x, y):
     '''Used to sort mutations'''
-    return int(x) - int(y)
+    return int(x[1:-1]) - int(y[1:-1])
 
 
 class Mutation:
@@ -179,14 +179,14 @@ class LocalVariant(SeqRecord):
             self.frame = None
         self.frequency = None
         self.mutations = []
-        for k, v in kwargs.items():
+        for k, v in list(kwargs.items()):
             self.__dict__[k] = v
 
     def get_mutations(self, r_seq):
         '''Given the variant sequence and the reference,
             aligns them and detects the mutations'''
         import tempfile
-        import Alignment
+        from . import Alignment
 
         outfile = tempfile.NamedTemporaryFile()
         out_name = outfile.name
@@ -198,31 +198,31 @@ class LocalVariant(SeqRecord):
         tal = Alignment.alignfile2dict([out_name],
                                        'ref_mut_align', 20.0, 2.0)
         os.remove(out_name)
-        ka = tal.keys()[0]
+        ka = list(tal.keys())[0]
         this = tal[ka]['asis']
         # Extracts only the matching region and lists mutations
         this.summary()
         m_start, m_stop = this.start, this.stop
-        lslog.info('start: %d  stop: %d' % (m_start, m_stop))
+        lslog.info('start: %d  stop: %d', m_start, m_stop)
 
         # Check if alignment starts before or after the reference
         if not this.seq_a.startswith('-') and this.seq_b.startswith('-'):
             # after
-            it_pair = zip(r_str[m_start - 1:m_stop],
-                          str(self.seq))
+            it_pair = list(zip(r_str[m_start - 1:m_stop],
+                           str(self.seq)))
         elif this.seq_a.startswith('-') and not this.seq_b.startswith('-'):
             # before
-            it_pair = zip(r_str[m_start - 1:m_stop],
-                          str(self.seq)[m_start - 1:m_stop])
+            it_pair = list(zip(r_str[m_start - 1:m_stop],
+                           str(self.seq)[m_start - 1:m_stop]))
         elif not this.seq_a.startswith('-') and not this.seq_b.startswith('-'):
             # together
-            it_pair = zip(r_str,
-                          str(self.seq))
-            
-        seq_dist = sum(p[0] != p[1] for p in it_pair)
-        lslog.info('distance between ref and seq: %d' % seq_dist)
+            it_pair = list(zip(r_str,
+                           str(self.seq)))
+
+        seq_dist = sum(p[0].upper() != p[1].upper() for p in it_pair)
+        lslog.info('distance between ref and seq: %d', seq_dist)
         if seq_dist > 20:
-            lslog.warning('distance > 20')
+            lslog.warning('distance is %d > 20', seq_dist)
             # print ''.join(p[0] for p in it_pair)
             # print ''.join(p[1] for p in it_pair)
 
@@ -246,7 +246,7 @@ class LocalStructure:
 
         descriptions = [s.description
                         for s in SeqIO.parse(self.sup_file, 'fasta')]
-        prog = re.compile('posterior=(\d*.*\d*)[-\s\t]ave_reads=(\d*.*\d*)')
+        prog = re.compile(r'posterior=(\d*.*\d*)[-\s\t]ave_reads=(\d*.*\d*)')
         self.posteriors = \
             [float(prog.search(d).group(1)) for d in descriptions]
         self.ave_reads = \
@@ -254,7 +254,10 @@ class LocalStructure:
         lslog.info('parsed %d sequences' % len(descriptions))
 
         self.seq_obj = SeqIO.parse(self.sup_file, 'fasta')
-        self.ref = ref  # HXB2[g_start - 1:g_stop]
+        ref_rec = list(SeqIO.parse(ref, 'fasta'))[0]
+        self.ref = ref_rec.seq
+        # ref_seq_aa = ref_seq.translate()
+        print('Reference is %s from file' % ref_rec.id, file=sys.stderr)
         self.cons = Seq(self.get_cons(), IUPAC.unambiguous_dna)
         self.frame = find_frame(self.cons)
         lslog.info('consensus starts with %s; frame is %d' %
@@ -262,32 +265,29 @@ class LocalStructure:
 
         # shorah 0.6 introduced strand bias correction to improve precision
         # in  SNVs calling. Results are in file SNVs_*_final.csv.
+        self.snvs = None
         snv_files = glob.glob('*_final.csv')
-        assert len(snv_files) == 1
-        snv_file = snv_files[0]
-        csv_reader = open(snv_file)
-        csv_reader.next()
-        snvs = [row.split(',')[2] + row.split(',')[1] + row.split(',')[3]
-                for row in csv_reader]
-        self.snvs = snvs
-        lslog.info('%d SNVs found in %s' % (len(snvs), snv_file))
+        assert len(snv_files) <= 1
+        if len(snv_files) == 1:
+            snv_file = snv_files[0]
+            csv_reader = open(snv_file)
+            next(csv_reader)
+            snvs = [row.split(',')[2] + row.split(',')[1] + row.split(',')[3]
+                    for row in csv_reader]
+            self.snvs = snvs
+            lslog.info('%d SNVs found in %s' % (len(snvs), snv_file))
 
-        # now parsing the total number of reads
-        try:
-            sup_far = os.path.join(s_head, '-'.join(self.name.split('-')[:-1])
-                                   + '.far')
-            ns = SeqIO.parse(open(sup_far), 'fasta')
-            self.ds = len([s for s in ns])
-            lslog.info('%d reads; found parsing far.file' % self.ds)
-        except IOError:
-            cov_h = open('coverage.txt')
-            for cov_line in cov_h:
-                if cov_line.split()[0].split('.')[0] == \
-                        self.name.split('.')[0]:
-                    self.n_reads = int(cov_line.split()[4])
-                    break
-            cov_h.close()
-            lslog.info('%d reads; found in coverage.txt' % self.n_reads)
+        # now parsing the total number of reads from dbg file
+        self.n_reads = 0
+        dbg_file = os.path.join(s_head,
+                                '-'.join(self.name.split('-')[:-1]) + '.dbg')
+        with open(dbg_file) as f:
+            for l in f:
+                mobj = re.search(r'Number of reads, n = (\d*)', l)
+                if mobj:
+                    self.n_reads = int(mobj.group(1))
+
+            lslog.info('%d reads; found parsing dbg file' % self.n_reads)
         if not self.n_reads:
             lslog.error('coverage not parsed, n of reads unknown')
             sys.exit('coverage not parsed, n of reads unknown')
@@ -306,18 +306,18 @@ class LocalStructure:
             if post < threshold or ave_reads < MINIMUM_READ:
                 continue
             if post > 1.0:
-                print >> sys.stderr, 'WARNING: posterior=', post
+                print('WARNING: posterior=', post, file=sys.stderr)
                 lslog.warning('posterior=%f' % post)
             ws = str(s.seq)
             var_dict[ws] = var_dict.get(ws, 0) + ave_reads
 
         tot_freq = sum(var_dict.values())
-        print >> sys.stderr, 'Total reads:', tot_freq
+        print('Total reads:', tot_freq, file=sys.stderr)
 
         supported_var_dict = {}  # supported by SNVs
         # first pass excludes the variants unsupported in SNVs final file
         lslog.info(self.snvs)
-        for k, v in var_dict.items():
+        for k, v in list(var_dict.items()):
             tsr = LocalVariant(Seq(k, IUPAC.unambiguous_dna),
                                seq_id='reconstructed_hap',
                                description='to_be_confirmed',
@@ -327,7 +327,7 @@ class LocalStructure:
             save = True
             lslog.info('Checking mutations on %s' % k)
             for mt in tsr.mutations:
-                if str(mt) not in self.snvs:
+                if self.snvs and str(mt) not in self.snvs:
                     save = False
                     lslog.debug('%s not supported' % str(mt))
             if save:
@@ -338,7 +338,7 @@ class LocalStructure:
 
         i = 1
         tot_freq = sum(supported_var_dict.values())
-        for k, v in supported_var_dict.items():
+        for k, v in list(supported_var_dict.items()):
             freq_here = 100 * v / tot_freq
             tsr = LocalVariant(Seq(k, IUPAC.unambiguous_dna),
                                seq_id='reconstructed_hap_%d' % i,
@@ -357,31 +357,29 @@ class LocalStructure:
         SeqIO.write(self.dna_vars, wd + '/dna_seqs.fasta', 'fasta')
         lslog.info('Sequences written to file')
 
-
-    def print_mutations(self, rm_seq, out_format='csv', out_file=sys.stdout):
+    def print_mutations(self, rmut, out_format='csv', out_file=sys.stdout):
         '''As the name says
         '''
-
-        from operator import itemgetter
+        from functools import cmp_to_key
         if out_format == 'csv':
             import csv
-            fh = open(out_file, 'wb')
+            fh = open(out_file, 'wt')
             writer = csv.writer(fh, dialect='excel')
 
+        rm_seq = list(SeqIO.parse(rmut, 'fasta'))[0].seq
         to_print = self.dna_vars
         all_mut = set([])
         for v in to_print:
             v.get_mutations(rm_seq)
             for m in v.mutations:
                 all_mut.add(str(m))
-        all_mut = sorted(list(all_mut), key=itemgetter(slice(1, -1)),
-                         cmp=str_num_compare)
+        all_mut = sorted(list(all_mut), key=cmp_to_key(str_num_compare))
         all_mut.insert(0, 'freq\\mut')
 
         if out_format == 'csv':
             writer.writerow(all_mut)
         elif out_format == 'human':
-            print '\t'.join(all_mut)
+            print('\t'.join(all_mut))
 
         for v in to_print:
             mut_str = [str(m) for m in v.mutations]
@@ -390,15 +388,15 @@ class LocalStructure:
             if out_format == 'csv':
                 writer.writerow(row)
             elif out_format == 'human':
-                print '\t'.join(map(str, row))
+                print('\t'.join(map(str, row)))
 
     def get_cons(self):
         '''Consensus by weighting the support with frequencies
         '''
         import tempfile
-        from itertools import izip
+
         from collections import Counter
-        import Alignment
+        from . import Alignment
         from Bio import AlignIO
 
         alignment = AlignIO.read(self.sup_file, 'fasta')
@@ -420,24 +418,24 @@ class LocalStructure:
         tal = Alignment.alignfile2dict([out_name],
                                        'ref_cons_alignment', 20.0, 0.1)
         os.remove(out_name)
-        ka = tal.keys()[0]
+        ka = list(tal.keys())[0]
         this = tal[ka]['asis']
         # Extracts only the matching region and fill gaps
         this.summary()
         start, stop = this.start, this.stop
         # ref_file, consensus
-        it_pair = izip(this.seq_a[start - 1:stop],
-                       this.seq_b[start - 1:stop])
+        it_pair = zip(this.seq_a[start - 1:stop],
+                      this.seq_b[start - 1:stop])
         this_seq = []
         while True:
             try:
-                p = it_pair.next()
+                p = next(it_pair)
             except StopIteration:
                 break
             if p is None:
                 break
             if p[1] == '-' or p[1] == 'N':
-                #assert p[0] != '-', 'gap-gap?'
+                # assert p[0] != '-', 'gap-gap?'
                 this_seq.append(p[0])
             elif p[0] != '-':
                 this_seq.append(p[1])
@@ -501,13 +499,13 @@ if __name__ == '__main__':
     lslog.info(' '.join(sys.argv))
 
     sup_file = args['support']
-    print 'Support is', sup_file
+    print('Support is', sup_file)
 
     if args['reference']:
-        ref_rec = list(SeqIO.parse(args['reference'], 'fasta'))[0]
-        ref_seq = ref_rec.seq
-        #ref_seq_aa = ref_seq.translate()
-        print >> sys.stderr, 'Reference is %s from file' % ref_rec.id
+        ref_rec_m = list(SeqIO.parse(args['reference'], 'fasta'))[0]
+        ref_seq = ref_rec_m.seq
+        # ref_seq_aa = ref_seq.translate()
+        print('Reference is %s from file' % ref_rec_m.id, file=sys.stderr)
 
     sample_ls = LocalStructure(support_file=sup_file, ref=ref_seq)
 
