@@ -16,7 +16,9 @@ if __name__ == "__main__" and __package__ is None:
                                      epilog='Input are mandatory')
     parser.add_argument('-s', '--support', dest='support',
                         help='support file')
-    parser.add_argument('-r', '--reference', dest='reference',
+    parser.add_argument('-r', '--region', dest='region', default=None,
+                        help='region in chr:start-stop format')
+    parser.add_argument('-f', '--reference', dest='reference',
                         help='fasta file with the reference used in \
                         running shorah')
     args = parser.parse_args()
@@ -47,7 +49,8 @@ if __name__ == "__main__" and __package__ is None:
 
     from localvariants import LStructure as LS
 
-    sample_ls = LS.LocalStructure(support_file=args.support, ref=args.reference)
+    sample_ls = LS.LocalStructure(support_file=args.support, ref=args.reference,
+                                  region=args.region)
 
     sample_ls.alignedvariants(threshold=0.95)
 
