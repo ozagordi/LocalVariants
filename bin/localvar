@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3.4
+#!/usr/bin/env python3.4
 '''executable for LocalVariants. No code here, only calling the relevant
 methods.
 '''
@@ -30,22 +30,20 @@ if __name__ == "__main__" and __package__ is None:
     sys.modules["localvariants"] = mod
 
     import logging
-    import logging.handlers
 
-    lslog = logging.getLogger(__name__)
+    import logging.handlers
+    logging.basicConfig(filename='locstr.log', level=logging.DEBUG,
+                        format='%(levelname)s %(asctime)s %(funcName)s %(lineno)d %(message)s', datefmt='%Y/%m/%d %H:%M:%S')
+
     dn = os.path.dirname(__file__)
 
-    # set logging level
-    lslog.setLevel(logging.DEBUG)
-    # This handler writes everything to a file.
-    LOG_FILENAME = './locstr.log'
-    hl = logging.handlers.RotatingFileHandler(LOG_FILENAME, 'w',
-                                              maxBytes=200000, backupCount=5)
-    fo = logging.Formatter("%(levelname)s %(asctime)s %(funcName)s\
-                          %(lineno)d %(message)s")
-    hl.setFormatter(fo)
-    lslog.addHandler(hl)
-    lslog.info(' '.join(sys.argv))
+#    hl = logging.handlers.RotatingFileHandler(LOG_FILENAME, 'w',
+#                                              maxBytes=200000, backupCount=5)
+#    fo = logging.Formatter("%(levelname)s %(asctime)s %(funcName)s\
+#                          %(lineno)d %(message)s")
+#    hl.setFormatter(fo)
+#    lslog.addHandler(hl)
+    logging.info(' '.join(sys.argv))
 
     from localvariants import LStructure as LS
 

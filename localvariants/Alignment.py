@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.4
 ''' Provides some methods to work with needle (EMBOSS) alignments'''
 __author__ = "Osvaldo Zagordi"
 __version__ = "$Revision: 0.1 $"

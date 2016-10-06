@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.4
 '''This module parses support files, detects and list mutations
     '''
 import sys
@@ -71,18 +71,21 @@ def get_region_limits(ref_seq, cons_seq):
     outfile = NamedTemporaryFile()
     out_name = outfile.name
     outfile.close()
-    #os.remove(out_name)
+    print('>cons', file=sys.stderr)
+    print(str(cons_seq), file=sys.stderr)
+    print('>ref_seq', file=sys.stderr)
+    print(str(ref_seq), file=sys.stderr)
+
     Alignment.needle_align('asis:%s' % str(cons_seq),
                            'asis:%s' % str(ref_seq),
                            out_name, go=20.0, ge=2.0)
     tal = Alignment.alignfile2dict([out_name],
                                    'ref_cons_align', 20.0, 2.0)
-
+    #os.remove(out_name)
     ka = list(tal.keys())[0]
     this = tal[ka]['asis']
     # Extracts only the matching region
     this.summary()
-    lslog.info('start: %d  stop: %d', this.start, this.stop)
 
     # check if region starts before or after consensus
     if not this.seq_a.startswith('-') and this.seq_b.startswith('-'):
@@ -310,9 +313,13 @@ class LocalStructure:
             self.ref = ref_rec.seq
         # ref_seq_aa = ref_seq.translate()
         print('Reference is %s from file' % ref_rec.id, file=sys.stderr)
-        self.cons = Seq(self.get_cons(), IUPAC.unambiguous_dna)
+        # self.get_cons uses self.ref, so if the region is specified only the
+        # corresponding consensus will be extracted
+        gc_seq, gc_start, gc_stop = self.get_cons()
+        self.cons = Seq(gc_seq, IUPAC.unambiguous_dna)
         if self.region:
-            self.region_limits = get_region_limits(self.ref, self.cons)
+            self.region_limits = gc_start, gc_stop  # get_region_limits(self.ref, self.cons)
+            lslog.info('region specified, limits are start: %d  stop: %d', gc_start, gc_stop)
 
         self.frame = find_frame(self.cons)
         lslog.info('consensus starts with %s; frame is %d' %
@@ -334,8 +341,10 @@ class LocalStructure:
 
         # now parsing the total number of reads from dbg file
         self.n_reads = 0
-        dbg_file = os.path.join(s_head,
-                                '-'.join(self.name.split('-')[:-1]) + '.dbg')
+        assert len(glob.glob('*.dbg')) == 1
+        dbg_file = glob.glob('*.dbg')[0]
+        # dbg_file = os.path.join(s_head,
+        #                         '-'.join(self.name.split('-')[:-1]) + '.dbg')
         with open(dbg_file) as f:
             for l in f:
                 mobj = re.search(r'Number of reads, n = (\d*)', l)
@@ -452,6 +461,7 @@ class LocalStructure:
     def get_cons(self):
         '''Consensus by weighting the support with frequencies
         '''
+        import re
         import tempfile
 
         from collections import Counter
@@ -498,82 +508,8 @@ class LocalStructure:
                 this_seq.append(p[0])
             elif p[0] != '-':
                 this_seq.append(p[1])
-        return ''.join(this_seq)
 
-
-# def parse_com_line():
-#     '''Standard option parsing'''
-#     options_l, args_l = None, None
-#
-#     try:
-#         import argparse
-#
-#         # default action is 'store'
-#         parser = argparse.ArgumentParser(description='Local structure',
-#                                          epilog='Input are mandatory')
-#         parser.add_argument('-s', '--support', dest='support',
-#                             help='support file')
-#         parser.add_argument('-r', '--region', dest='region',
-#                             help='region in chr:start-stop format')
-#         parser.add_argument('-f', '--reference', dest='reference',
-#                             help='fasta file with the reference used in \
-#                             running shorah')
-#         args_l = parser.parse_args()
-#
-#     except ImportError:
-#         import optparse
-#
-#         usage = "usage: %prog -s support_file -r reference"
-#         optparser = optparse.OptionParser(usage=usage)
-#
-#         optparser.add_option("-s", "--support", type="string", default="",
-#                              help="support file", dest="support")
-#         optparser.add_option("-r", "--region", type="string", default="",
-#                              help="region in chr:start-stop format",
-#                              dest="region")
-#         optparser.add_option("-f", "--reference", type="string", default="",
-#                              help="fasta file with the reference used in \
-#                              running shorah", dest="reference")
-#         (options_l, args_l) = optparser.parse_args()
-#
-#         if not options_l.support:
-#             optparser.error("specifying support file is mandatory")
-#
-#     return options_l, args_l
-#
-#
-# if __name__ == '__main__':
-#
-#     options, args = parse_com_line()
-#     if args:
-#         args = vars(args)
-#     else:
-#         args = vars(options)
-#
-#     # set logging level
-#     lslog.setLevel(logging.DEBUG)
-#     # This handler writes everything to a file.
-#     LOG_FILENAME = './locstr.log'
-#     hl = logging.handlers.RotatingFileHandler(LOG_FILENAME, 'w',
-#                                               maxBytes=200000, backupCount=5)
-#     fo = logging.Formatter("%(levelname)s %(asctime)s %(funcName)s\
-#                           %(lineno)d %(message)s")
-#     hl.setFormatter(fo)
-#     lslog.addHandler(hl)
-#     lslog.info(' '.join(sys.argv))
-#
-#     sup_file = args['support']
-#     print('Support is', sup_file)
-#
-#     if args['reference']:
-#         ref_rec_m = list(SeqIO.parse(args['reference'], 'fasta'))[0]
-#         ref_seq = ref_rec_m.seq
-#         # ref_seq_aa = ref_seq.translate()
-#         print('Reference is %s from file' % ref_rec_m.id, file=sys.stderr)
-#
-#     sample_ls = LocalStructure(support_file=sup_file, ref=ref_seq)
-#
-#     sample_ls.alignedvariants(threshold=0.95)
-#
-#     sample_ls.print_mutations(ref_seq, out_format='csv',
-#                               out_file='mutations_DNA.csv')
+        ts_str = ''.join(this_seq)
+        match_start = re.search(ts_str[:10], strcons)
+        match_end = re.search(ts_str[-10:], strcons)
+        return ts_str, match_start.start(), match_end.end()
