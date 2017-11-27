@@ -1,0 +1,10 @@
+.gitignore
+README.md
+setup.cfg
+bin/localvar
+src/MinVar.egg-info/PKG-INFO
+src/MinVar.egg-info/SOURCES.txt
+src/MinVar.egg-info/dependency_links.txt
+src/MinVar.egg-info/entry_points.txt
+src/MinVar.egg-info/requires.txt
+src/MinVar.egg-info/top_level.txt

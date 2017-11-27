@@ -12,7 +12,6 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import IUPAC
-from Bio import Entrez
 
 # Make a global logging object.
 lslog = logging.getLogger(__name__)
@@ -20,23 +19,13 @@ lslog = logging.getLogger(__name__)
 MINIMUM_READ = 5.0
 
 # If HIV file is not there, fetch it
-Entrez.email = None  # To tell NCBI who you are
 mod_dir = os.path.split(__file__)[0]
-hiv_filename = os.path.join(mod_dir, "HIV-HXB2.fasta")
+hiv_filename = os.path.join(mod_dir, "db/HIV-HXB2.fasta")
 
-if not os.path.isfile(hiv_filename):
-    # Downloading...
-    print('Downloading HIV reference from PubMed', file=sys.stderr)
-    handle = Entrez.efetch(db="nucleotide", id="1906382",
-                           rettype="fasta", retmode="text")
-    seq_record = SeqIO.read(handle, "fasta")
-    handle.close()
-    SeqIO.write(seq_record, hiv_filename, 'fasta')
-    print('Saved to', hiv_filename, file=sys.stderr)
 HXB2 = list(SeqIO.parse(hiv_filename, 'fasta'))[0]
 HXB2.alphabet = IUPAC.ambiguous_dna
 
-hcv_filename = os.path.join(mod_dir, "HCV1.fasta")
+hcv_filename = os.path.join(mod_dir, "db/HCV1.fasta")
 HCV = list(SeqIO.parse(hcv_filename, 'fasta'))[0]
 HCV.alphabet = IUPAC.ambiguous_dna
 
@@ -65,7 +54,7 @@ def get_region_limits(ref_seq, cons_seq):
     '''
     import re
     from tempfile import NamedTemporaryFile
-    from . import Alignment
+    import Alignment
 
     # align with
     outfile = NamedTemporaryFile()
@@ -258,16 +247,13 @@ class LocalVariant(SeqRecord):
         # Check if alignment starts before or after the reference
         if not this.seq_a.startswith('-') and this.seq_b.startswith('-'):
             # after
-            it_pair = list(zip(r_str[m_start - 1:m_stop],
-                           str(self.seq)))
+            it_pair = list(zip(r_str[m_start - 1:m_stop], str(self.seq)))
         elif this.seq_a.startswith('-') and not this.seq_b.startswith('-'):
             # before
-            it_pair = list(zip(r_str[m_start - 1:m_stop],
-                           str(self.seq)[m_start - 1:m_stop]))
+            it_pair = list(zip(r_str[m_start - 1:m_stop], str(self.seq)[m_start - 1:m_stop]))
         elif not this.seq_a.startswith('-') and not this.seq_b.startswith('-'):
             # together
-            it_pair = list(zip(r_str,
-                           str(self.seq)))
+            it_pair = list(zip(r_str, str(self.seq)))
 
         seq_dist = sum(p[0].upper() != p[1].upper() for p in it_pair)
         lslog.info('distance between ref and seq: %d', seq_dist)
@@ -301,7 +287,7 @@ class LocalStructure:
             [float(prog.search(d).group(1)) for d in descriptions]
         self.ave_reads = \
             [float(prog.search(d).group(2)) for d in descriptions]
-        lslog.info('parsed %d sequences' % len(descriptions))
+        lslog.info('parsed %d sequences', len(descriptions))
 
         self.seq_obj = SeqIO.parse(self.sup_file, 'fasta')
         ref_rec = list(SeqIO.parse(ref, 'fasta'))[0]
@@ -322,8 +308,7 @@ class LocalStructure:
             lslog.info('region specified, limits are start: %d  stop: %d', gc_start, gc_stop)
 
         self.frame = find_frame(self.cons)
-        lslog.info('consensus starts with %s; frame is %d' %
-                   (self.cons[:12], self.frame))
+        lslog.info('consensus starts with %s; frame is %d', self.cons[:12], self.frame)
 
         # shorah 0.6 introduced strand bias correction to improve precision
         # in  SNVs calling. Results are in file SNVs_*_final.csv.
@@ -337,7 +322,7 @@ class LocalStructure:
             snvs = [row.split(',')[2] + row.split(',')[1] + row.split(',')[3]
                     for row in csv_reader]
             self.snvs = snvs
-            lslog.info('%d SNVs found in %s' % (len(snvs), snv_file))
+            lslog.info('%d SNVs found in %s', len(snvs), snv_file)
 
         # now parsing the total number of reads from dbg file
         self.n_reads = 0
@@ -351,7 +336,7 @@ class LocalStructure:
                 if mobj:
                     self.n_reads = int(mobj.group(1))
 
-            lslog.info('%d reads; found parsing dbg file' % self.n_reads)
+            lslog.info('%d reads; found parsing dbg file', self.n_reads)
         if not self.n_reads:
             lslog.error('coverage not parsed, n of reads unknown')
             sys.exit('coverage not parsed, n of reads unknown')
@@ -371,7 +356,7 @@ class LocalStructure:
                 continue
             if post > 1.0:
                 print('WARNING: posterior=', post, file=sys.stderr)
-                lslog.warning('posterior=%f' % post)
+                lslog.warning('posterior=%f', post)
             if self.region:
                 a, b = self.region_limits
                 ws = str(s.seq[a:b])
@@ -386,22 +371,20 @@ class LocalStructure:
         # first pass excludes the variants unsupported in SNVs final file
         lslog.info(self.snvs)
         for k, v in list(var_dict.items()):
-            tsr = LocalVariant(Seq(k, IUPAC.unambiguous_dna),
-                               seq_id='reconstructed_hap',
-                               description='to_be_confirmed',
-                               frequency=0.0)
+            tsr = LocalVariant(Seq(k, IUPAC.unambiguous_dna), seq_id='reconstructed_hap',
+                               description='to_be_confirmed', frequency=0.0)
 
             tsr.get_mutations(self.ref)
             save = True
-            lslog.info('Checking mutations on %s' % k)
+            lslog.info('Checking mutations on %s', k)
             for mt in tsr.mutations:
                 if self.snvs and str(mt) not in self.snvs:
                     save = False
-                    lslog.debug('%s not supported' % str(mt))
+                    lslog.debug('%s not supported', str(mt))
             if save:
                 supported_var_dict[k] = v
 
-        if len(supported_var_dict) == 0:
+        if supported_var_dict == {}:
             raise Exception("No supported variants!")
 
         i = 1
@@ -470,8 +453,8 @@ class LocalStructure:
 
         alignment = AlignIO.read(self.sup_file, 'fasta')
         sc = []
-        for i in range(len(alignment[0])):
-            bases = alignment[:, i]
+        for j in range(len(alignment[0])):
+            bases = alignment[:, j]
             c = Counter()
             for i, b in enumerate(bases):
                 c[b] += int(round(self.posteriors[i] * self.ave_reads[i]))

@@ -1,0 +1,3 @@
+[console_scripts]
+localvariants = localvariants.cli:main
+

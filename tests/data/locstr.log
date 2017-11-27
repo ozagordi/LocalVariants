@@ -1,0 +1,174 @@
+INFO 2017-11-27 12:18:14 cli.py: main() 59: 	/Users/ozagordi/miniconda3/bin/localvariants -s /Users/ozagordi/Documents/Software/LocalVariants/tests/data/sample_support.fasta -f /Users/ozagordi/Documents/Software/LocalVariants/tests/data/sample_reference.fasta
+INFO 2017-11-27 12:18:14 LStructure.py: __init__() 301: 	parsed 31 sequences
+INFO 2017-11-27 12:18:14 LStructure.py: __init__() 322: 	consensus starts with TGTACAAGACCC; frame is 1
+INFO 2017-11-27 12:18:14 LStructure.py: __init__() 350: 	436 reads; found parsing dbg file
+WARNING 2017-11-27 12:18:15 LStructure.py: alignedvariants() 370: 	posterior=1.061500
+INFO 2017-11-27 12:18:15 LStructure.py: alignedvariants() 383: 	None
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 256: 	start: 1  stop: 117
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 270: 	distance between ref and seq: 12
+INFO 2017-11-27 12:18:15 LStructure.py: alignedvariants() 392: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGAAATAATAGGAGATATAAGACAAGCACATTGGAACCTTAGTAGAGCA
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 256: 	start: 1  stop: 117
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 270: 	distance between ref and seq: 11
+INFO 2017-11-27 12:18:15 LStructure.py: alignedvariants() 392: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAA--ATAATAGGAGATATAAGACAAGCACATTGGAACCTTAGTAGAGCA
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 256: 	start: 1  stop: 117
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 270: 	distance between ref and seq: 14
+INFO 2017-11-27 12:18:15 LStructure.py: alignedvariants() 392: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGAAATAATAGGAGATATAAGGCAAGCACACTGGAACCTTAGTAGAGCA
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 256: 	start: 1  stop: 117
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 270: 	distance between ref and seq: 12
+INFO 2017-11-27 12:18:15 LStructure.py: alignedvariants() 392: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGAAATAATAGGAGATATAAGACAAGCACATTGAAACCTTAGTAGAGCA
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 256: 	start: 1  stop: 117
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 270: 	distance between ref and seq: 11
+INFO 2017-11-27 12:18:15 LStructure.py: alignedvariants() 392: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGAAAAGGTATATATATAGGAGCAGGGAAAGTTTATGCAACAGAAAAAATAATAGGAGATATAAGACAAGCACATTGTAACCTTAGTGGAGCA
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 256: 	start: 1  stop: 117
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 270: 	distance between ref and seq: 11
+INFO 2017-11-27 12:18:15 LStructure.py: alignedvariants() 392: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGAAATAATAGGAGATATAAGACAAGCACATTGTAACCTTAGTAGAGCA
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 256: 	start: 1  stop: 117
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 270: 	distance between ref and seq: 12
+INFO 2017-11-27 12:18:15 LStructure.py: alignedvariants() 392: 	Checking mutations on TGTACAAGACCCAGCAACAATACAGGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGACATAATAGGAGATATAAGACAAGCACATTGGAACCTTAGTAGAGCA
+INFO 2017-11-27 12:18:15 LStructure.py: alignedvariants() 422: 	Sequences written to file
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 256: 	start: 1  stop: 117
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 270: 	distance between ref and seq: 12
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 256: 	start: 1  stop: 117
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 270: 	distance between ref and seq: 11
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 256: 	start: 1  stop: 117
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 270: 	distance between ref and seq: 12
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 256: 	start: 1  stop: 117
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 270: 	distance between ref and seq: 14
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 256: 	start: 1  stop: 117
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 270: 	distance between ref and seq: 11
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 256: 	start: 1  stop: 117
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 270: 	distance between ref and seq: 12
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 256: 	start: 1  stop: 117
+INFO 2017-11-27 12:18:15 LStructure.py: get_mutations() 270: 	distance between ref and seq: 11
+INFO 2017-11-27 12:19:33 cli.py: main() 59: 	/Users/ozagordi/miniconda3/bin/localvariants -s /Users/ozagordi/Documents/Software/LocalVariants/tests/data/sample_support.fasta -f /Users/ozagordi/Documents/Software/LocalVariants/tests/data/sample_reference.fasta
+INFO 2017-11-27 12:19:33 LStructure.py: __init__() 291: 	parsed 31 sequences
+INFO 2017-11-27 12:19:33 LStructure.py: __init__() 312: 	consensus starts with TGTACAAGACCC; frame is 1
+INFO 2017-11-27 12:19:33 LStructure.py: __init__() 340: 	436 reads; found parsing dbg file
+WARNING 2017-11-27 12:19:33 LStructure.py: alignedvariants() 360: 	posterior=1.061500
+INFO 2017-11-27 12:19:33 LStructure.py: alignedvariants() 373: 	None
+INFO 2017-11-27 12:19:33 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:19:33 LStructure.py: get_mutations() 260: 	distance between ref and seq: 12
+INFO 2017-11-27 12:19:33 LStructure.py: alignedvariants() 382: 	Checking mutations on TGTACAAGACCCAGCAACAATACAGGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGACATAATAGGAGATATAAGACAAGCACATTGGAACCTTAGTAGAGCA
+INFO 2017-11-27 12:19:33 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:19:33 LStructure.py: get_mutations() 260: 	distance between ref and seq: 14
+INFO 2017-11-27 12:19:33 LStructure.py: alignedvariants() 382: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGAAATAATAGGAGATATAAGGCAAGCACACTGGAACCTTAGTAGAGCA
+INFO 2017-11-27 12:19:33 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:19:33 LStructure.py: get_mutations() 260: 	distance between ref and seq: 12
+INFO 2017-11-27 12:19:33 LStructure.py: alignedvariants() 382: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGAAATAATAGGAGATATAAGACAAGCACATTGGAACCTTAGTAGAGCA
+INFO 2017-11-27 12:19:33 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:19:33 LStructure.py: get_mutations() 260: 	distance between ref and seq: 12
+INFO 2017-11-27 12:19:33 LStructure.py: alignedvariants() 382: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGAAATAATAGGAGATATAAGACAAGCACATTGAAACCTTAGTAGAGCA
+INFO 2017-11-27 12:19:33 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:19:33 LStructure.py: get_mutations() 260: 	distance between ref and seq: 11
+INFO 2017-11-27 12:19:33 LStructure.py: alignedvariants() 382: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGAAAAGGTATATATATAGGAGCAGGGAAAGTTTATGCAACAGAAAAAATAATAGGAGATATAAGACAAGCACATTGTAACCTTAGTGGAGCA
+INFO 2017-11-27 12:19:33 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:19:33 LStructure.py: get_mutations() 260: 	distance between ref and seq: 11
+INFO 2017-11-27 12:19:33 LStructure.py: alignedvariants() 382: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGAAATAATAGGAGATATAAGACAAGCACATTGTAACCTTAGTAGAGCA
+INFO 2017-11-27 12:19:34 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:19:34 LStructure.py: get_mutations() 260: 	distance between ref and seq: 11
+INFO 2017-11-27 12:19:34 LStructure.py: alignedvariants() 382: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAA--ATAATAGGAGATATAAGACAAGCACATTGGAACCTTAGTAGAGCA
+INFO 2017-11-27 12:19:34 LStructure.py: alignedvariants() 412: 	Sequences written to file
+INFO 2017-11-27 12:19:34 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:19:34 LStructure.py: get_mutations() 260: 	distance between ref and seq: 12
+INFO 2017-11-27 12:19:34 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:19:34 LStructure.py: get_mutations() 260: 	distance between ref and seq: 11
+INFO 2017-11-27 12:19:34 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:19:34 LStructure.py: get_mutations() 260: 	distance between ref and seq: 12
+INFO 2017-11-27 12:19:34 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:19:34 LStructure.py: get_mutations() 260: 	distance between ref and seq: 14
+INFO 2017-11-27 12:19:34 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:19:34 LStructure.py: get_mutations() 260: 	distance between ref and seq: 11
+INFO 2017-11-27 12:19:34 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:19:34 LStructure.py: get_mutations() 260: 	distance between ref and seq: 12
+INFO 2017-11-27 12:19:34 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:19:34 LStructure.py: get_mutations() 260: 	distance between ref and seq: 11
+INFO 2017-11-27 12:19:46 cli.py: main() 59: 	/Users/ozagordi/miniconda3/bin/localvariants -s /Users/ozagordi/Documents/Software/LocalVariants/tests/data/sample_support.fasta -f /Users/ozagordi/Documents/Software/LocalVariants/tests/data/sample_reference.fasta
+INFO 2017-11-27 12:19:46 LStructure.py: __init__() 291: 	parsed 31 sequences
+INFO 2017-11-27 12:19:47 LStructure.py: __init__() 312: 	consensus starts with TGTACAAGACCC; frame is 1
+INFO 2017-11-27 12:19:47 LStructure.py: __init__() 340: 	436 reads; found parsing dbg file
+WARNING 2017-11-27 12:19:47 LStructure.py: alignedvariants() 360: 	posterior=1.061500
+INFO 2017-11-27 12:19:47 LStructure.py: alignedvariants() 373: 	None
+INFO 2017-11-27 12:20:06 cli.py: main() 59: 	/Users/ozagordi/miniconda3/bin/localvariants -s /Users/ozagordi/Documents/Software/LocalVariants/tests/data/sample_support.fasta -f /Users/ozagordi/Documents/Software/LocalVariants/tests/data/sample_reference.fasta
+INFO 2017-11-27 12:20:06 LStructure.py: __init__() 291: 	parsed 31 sequences
+INFO 2017-11-27 12:20:06 LStructure.py: __init__() 312: 	consensus starts with TGTACAAGACCC; frame is 1
+INFO 2017-11-27 12:20:06 LStructure.py: __init__() 340: 	436 reads; found parsing dbg file
+WARNING 2017-11-27 12:20:07 LStructure.py: alignedvariants() 360: 	posterior=1.061500
+INFO 2017-11-27 12:20:07 LStructure.py: alignedvariants() 373: 	None
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 260: 	distance between ref and seq: 12
+INFO 2017-11-27 12:20:07 LStructure.py: alignedvariants() 382: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGAAATAATAGGAGATATAAGACAAGCACATTGGAACCTTAGTAGAGCA
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 260: 	distance between ref and seq: 12
+INFO 2017-11-27 12:20:07 LStructure.py: alignedvariants() 382: 	Checking mutations on TGTACAAGACCCAGCAACAATACAGGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGACATAATAGGAGATATAAGACAAGCACATTGGAACCTTAGTAGAGCA
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 260: 	distance between ref and seq: 12
+INFO 2017-11-27 12:20:07 LStructure.py: alignedvariants() 382: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGAAATAATAGGAGATATAAGACAAGCACATTGAAACCTTAGTAGAGCA
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 260: 	distance between ref and seq: 11
+INFO 2017-11-27 12:20:07 LStructure.py: alignedvariants() 382: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGAAATAATAGGAGATATAAGACAAGCACATTGTAACCTTAGTAGAGCA
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 260: 	distance between ref and seq: 14
+INFO 2017-11-27 12:20:07 LStructure.py: alignedvariants() 382: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGAAATAATAGGAGATATAAGGCAAGCACACTGGAACCTTAGTAGAGCA
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 260: 	distance between ref and seq: 11
+INFO 2017-11-27 12:20:07 LStructure.py: alignedvariants() 382: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGAAAAGGTATATATATAGGAGCAGGGAAAGTTTATGCAACAGAAAAAATAATAGGAGATATAAGACAAGCACATTGTAACCTTAGTGGAGCA
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 260: 	distance between ref and seq: 11
+INFO 2017-11-27 12:20:07 LStructure.py: alignedvariants() 382: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAA--ATAATAGGAGATATAAGACAAGCACATTGGAACCTTAGTAGAGCA
+INFO 2017-11-27 12:20:07 LStructure.py: alignedvariants() 412: 	Sequences written to file
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 260: 	distance between ref and seq: 12
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 260: 	distance between ref and seq: 11
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 260: 	distance between ref and seq: 12
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 260: 	distance between ref and seq: 14
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 260: 	distance between ref and seq: 11
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 260: 	distance between ref and seq: 12
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 246: 	start: 1  stop: 117
+INFO 2017-11-27 12:20:07 LStructure.py: get_mutations() 260: 	distance between ref and seq: 11
+INFO 2017-11-27 12:26:58 cli.py: main() 59: 	/Users/ozagordi/miniconda3/bin/localvariants -s /Users/ozagordi/Documents/Software/LocalVariants/tests/data/sample_support.fasta -f /Users/ozagordi/Documents/Software/LocalVariants/tests/data/sample_reference.fasta
+INFO 2017-11-27 12:26:58 LStructure.py: __init__() 290: 	parsed 31 sequences
+INFO 2017-11-27 12:26:58 LStructure.py: __init__() 311: 	consensus starts with TGTACAAGACCC; frame is 1
+INFO 2017-11-27 12:26:58 LStructure.py: __init__() 339: 	436 reads; found parsing dbg file
+WARNING 2017-11-27 12:26:58 LStructure.py: alignedvariants() 359: 	posterior=1.061500
+INFO 2017-11-27 12:26:58 LStructure.py: alignedvariants() 372: 	None
+INFO 2017-11-27 12:26:58 LStructure.py: get_mutations() 245: 	start: 1  stop: 117
+INFO 2017-11-27 12:26:58 LStructure.py: get_mutations() 259: 	distance between ref and seq: 12
+INFO 2017-11-27 12:26:58 LStructure.py: alignedvariants() 379: 	Checking mutations on TGTACAAGACCCAGCAACAATACAGGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGACATAATAGGAGATATAAGACAAGCACATTGGAACCTTAGTAGAGCA
+INFO 2017-11-27 12:26:58 LStructure.py: get_mutations() 245: 	start: 1  stop: 117
+INFO 2017-11-27 12:26:58 LStructure.py: get_mutations() 259: 	distance between ref and seq: 14
+INFO 2017-11-27 12:26:58 LStructure.py: alignedvariants() 379: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGAAATAATAGGAGATATAAGGCAAGCACACTGGAACCTTAGTAGAGCA
+INFO 2017-11-27 12:26:58 LStructure.py: get_mutations() 245: 	start: 1  stop: 117
+INFO 2017-11-27 12:26:58 LStructure.py: get_mutations() 259: 	distance between ref and seq: 12
+INFO 2017-11-27 12:26:58 LStructure.py: alignedvariants() 379: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGAAATAATAGGAGATATAAGACAAGCACATTGGAACCTTAGTAGAGCA
+INFO 2017-11-27 12:26:58 LStructure.py: get_mutations() 245: 	start: 1  stop: 117
+INFO 2017-11-27 12:26:58 LStructure.py: get_mutations() 259: 	distance between ref and seq: 11
+INFO 2017-11-27 12:26:58 LStructure.py: alignedvariants() 379: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGAAATAATAGGAGATATAAGACAAGCACATTGTAACCTTAGTAGAGCA
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 245: 	start: 1  stop: 117
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 259: 	distance between ref and seq: 11
+INFO 2017-11-27 12:26:59 LStructure.py: alignedvariants() 379: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAA--ATAATAGGAGATATAAGACAAGCACATTGGAACCTTAGTAGAGCA
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 245: 	start: 1  stop: 117
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 259: 	distance between ref and seq: 11
+INFO 2017-11-27 12:26:59 LStructure.py: alignedvariants() 379: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGAAAAGGTATATATATAGGAGCAGGGAAAGTTTATGCAACAGAAAAAATAATAGGAGATATAAGACAAGCACATTGTAACCTTAGTGGAGCA
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 245: 	start: 1  stop: 117
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 259: 	distance between ref and seq: 12
+INFO 2017-11-27 12:26:59 LStructure.py: alignedvariants() 379: 	Checking mutations on TGTACAAGACCCAGCAACAATACAAGACAAGGTATACATATAGGACCAGGGAAATTTTATACAACAGGAGAAATAATAGGAGATATAAGACAAGCACATTGAAACCTTAGTAGAGCA
+INFO 2017-11-27 12:26:59 LStructure.py: alignedvariants() 409: 	Sequences written to file
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 245: 	start: 1  stop: 117
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 259: 	distance between ref and seq: 12
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 245: 	start: 1  stop: 117
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 259: 	distance between ref and seq: 11
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 245: 	start: 1  stop: 117
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 259: 	distance between ref and seq: 12
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 245: 	start: 1  stop: 117
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 259: 	distance between ref and seq: 14
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 245: 	start: 1  stop: 117
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 259: 	distance between ref and seq: 11
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 245: 	start: 1  stop: 117
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 259: 	distance between ref and seq: 12
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 245: 	start: 1  stop: 117
+INFO 2017-11-27 12:26:59 LStructure.py: get_mutations() 259: 	distance between ref and seq: 11
