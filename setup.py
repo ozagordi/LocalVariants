@@ -15,11 +15,9 @@ setup(
     author_email='firstname.lastname@gmail.com',
     packages=find_packages('src'),  # include all packages under src
     package_dir={'': 'src'},  # tell setuptools packages are under src
-    # scripts=['bin/minvar', 'src/scripts/blast2sam.py'],
     package_data={'minvar': ['src/localvariants/db/*']},
     entry_points={
         'console_scripts': ['localvariants = localvariants.cli:main']
-        #                    'blast2sam = scripts.blast2sam:main'],
         },
     classifiers=[
         # How mature is this project? Common values are

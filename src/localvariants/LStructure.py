@@ -1,16 +1,15 @@
-#!/usr/bin/env python3.4
-'''This module parses support files, detects and list mutations'''
-import sys
-import os
-import warnings
-
+#!/usr/bin/env python3
+"""This module parses support files, detects and list mutations."""
 import logging
 import logging.handlers
+import os
+import sys
+import warnings
 
 from Bio import SeqIO
+from Bio.Alphabet import IUPAC
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-from Bio.Alphabet import IUPAC
 
 # Make a global logging object.
 lslog = logging.getLogger(__name__)
@@ -46,11 +45,12 @@ translation_table = {
 
 
 def get_region_limits(ref_seq, cons_seq):
-    '''Supported haplotypes need to be cut according to the coordinates given
-    in region. This function takes just the coonsensus and reference, already
+    """Cut supported haplotypes according to the coordinates given in region.
+
+    This function takes just the coonsensus and reference, already
     cut according to region chr:start-stop, and returns the coordinate to cut
     consensus and, consequently, all sequences in support.
-    '''
+    """
     import re
     from tempfile import NamedTemporaryFile
     import Alignment
@@ -95,8 +95,7 @@ def get_region_limits(ref_seq, cons_seq):
 
 
 def find_frame(read):
-    '''Frame is the one with the smallest number of stop codons
-    '''
+    """Frame is the one with the smallest number of stop codons."""
     from Bio.Seq import translate
     import Bio
 
@@ -127,9 +126,10 @@ def find_frame(read):
 
 
 def reframe(read, n_gaps):
-    '''It transforms AC---GTGT or ACGT---GT into ACG---TGT if n_gaps=3
-        Read must already be in frame
-    '''
+    """Transform AC---GTGT or ACGT---GT into ACG---TGT if n_gaps=3.
+
+    Read must already be in frame
+    """
     import re
     gap_region = '-' * n_gaps
     # check that read is in frame, except for the
@@ -170,8 +170,7 @@ def reframe(read, n_gaps):
 
 
 def gap_translation(seq_in, frame=1):
-    '''Biopython translation does not accept gaps
-        '''
+    """Biopython translation does not accept gaps."""
     aa = []
     try:
         s = str(seq_in).upper()
@@ -186,12 +185,13 @@ def gap_translation(seq_in, frame=1):
 
 
 def str_num_compare(x, y):
-    '''Used to sort mutations'''
+    """Use this to sort mutations."""
     return int(x[1:-1]) - int(y[1:-1])
 
 
 class Mutation:
-    '''Simple container for the mutation'''
+    """Simple container for the mutation."""
+
     def __init__(self, pos, wt, mut, comment=None):
         self.mutated = mut  # mutatis (to)
         self.original = wt  # mutandis (from)
@@ -207,7 +207,8 @@ class Mutation:
 
 
 class LocalVariant(SeqRecord):
-    '''Built on SeqRecord, this adds a few useful attributes'''
+    """Building on SeqRecord, add a few useful attributes."""
+
     def __init__(self, seq, seq_id, **kwargs):
         SeqRecord.__init__(self, seq=seq, id=seq_id)
         try:
@@ -220,8 +221,7 @@ class LocalVariant(SeqRecord):
             self.__dict__[k] = v
 
     def get_mutations(self, r_seq):
-        '''Given the variant sequence and the reference,
-            aligns them and detects the mutations'''
+        """Given the variant sequence and the reference, aligns them and detects the mutations."""
         from tempfile import NamedTemporaryFile
         from . import Alignment
 
@@ -270,8 +270,11 @@ class LocalVariant(SeqRecord):
 
 
 class LocalStructure:
-    '''The main class here, takes the file, computes the consensus, the
-        frame, the offset and list the variants'''
+    """This is the main class.
+
+    Takes the file, computes the consensus, the frame, the offset and list the variants.
+    """
+
     def __init__(self, support_file, ref, region):
         import re
         import glob
@@ -342,10 +345,10 @@ class LocalStructure:
         self.dna_vars = []
 
     def alignedvariants(self, threshold=0.9):
-        '''Merges sequences identical at DNA level. Returns a list of
-        LocalVariant objects.
-        '''
+        """Merge sequences identical at DNA level.
 
+        Returns a list of LocalVariant objects.
+        """
         import numpy as np
 
         var_dict = {}
@@ -408,8 +411,7 @@ class LocalStructure:
         lslog.info('Sequences written to file')
 
     def print_mutations(self, rmut, out_format='csv', out_file=sys.stdout):
-        '''As the name says
-        '''
+        """Do as the name says."""
         from functools import cmp_to_key
         if out_format == 'csv':
             import csv
@@ -441,8 +443,7 @@ class LocalStructure:
                 print('\t'.join(map(str, row)))
 
     def get_cons(self):
-        '''Consensus by weighting the support with frequencies
-        '''
+        """Compute consensus by weighting the support with frequencies."""
         import re
         import tempfile
 
