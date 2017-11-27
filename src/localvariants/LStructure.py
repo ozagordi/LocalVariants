@@ -1,6 +1,5 @@
 #!/usr/bin/env python3.4
-'''This module parses support files, detects and list mutations
-    '''
+'''This module parses support files, detects and list mutations'''
 import sys
 import os
 import warnings
