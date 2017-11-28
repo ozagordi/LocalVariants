@@ -11,3 +11,8 @@ src/*.pyc
 # OS X temporary files that should never be committed
 
 .DS_Store
+
+# output files in tests
+tests/data/dna_seqs.fasta
+tests/data/locstr.log
+tests/data/mutations_DNA.csv

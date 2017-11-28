@@ -53,7 +53,7 @@ def get_region_limits(ref_seq, cons_seq):
     """
     import re
     from tempfile import NamedTemporaryFile
-    import Alignment
+    from . import Alignment
 
     # align with
     outfile = NamedTemporaryFile()
@@ -69,7 +69,7 @@ def get_region_limits(ref_seq, cons_seq):
                            out_name, go=20.0, ge=2.0)
     tal = Alignment.alignfile2dict([out_name],
                                    'ref_cons_align', 20.0, 2.0)
-    #os.remove(out_name)
+    # os.remove(out_name)
     ka = list(tal.keys())[0]
     this = tal[ka]['asis']
     # Extracts only the matching region
